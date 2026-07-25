@@ -22,7 +22,6 @@ function QueryPage() {
   const handleSubmit = () => {
     const q = localQuestion.trim()
     if (!q) return
-    setQuestion(q)
     submitQuery(q)
   }
 

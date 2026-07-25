@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Layout, Menu, Typography } from 'antd'
-import { HealthCheckOutlined, SearchOutlined } from '@ant-design/icons'
+import { HeartOutlined, SearchOutlined } from '@ant-design/icons'
 import HealthPage from './pages/HealthPage'
 import QueryPage from './pages/QueryPage'
 
@@ -10,7 +10,7 @@ const { Title } = Typography
 const menuItems = [
   {
     key: 'health',
-    icon: <HealthCheckOutlined />,
+    icon: <HeartOutlined />,
     label: 'Health',
   },
   {
