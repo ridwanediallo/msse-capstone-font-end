@@ -1,18 +1,10 @@
-import { useState } from 'react'
-import { Layout, Menu, Typography } from 'antd'
-import { SearchOutlined } from '@ant-design/icons'
+import { Layout, Typography } from 'antd'
+
+import { DatabaseOutlined } from '@ant-design/icons'
 import QueryPage from './pages/QueryPage'
 
 const { Header, Content } = Layout
-const { Title } = Typography
-
-const menuItems = [
-  {
-    key: 'query',
-    icon: <SearchOutlined />,
-    label: 'Query',
-  },
-]
+const { Text } = Typography
 
 function App() {
   return (
@@ -21,14 +13,18 @@ function App() {
         style={{
           display: 'flex',
           alignItems: 'center',
-          background: '#fff',
-          borderBottom: '1px solid #f0f0f0',
-          padding: '0 24px',
+          background: 'linear-gradient(135deg, #001529 0%, #003a8c 100%)',
+          padding: '0 32px',
+          height: 72,
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
         }}
       >
-        <Title level={3} style={{ margin: 0 }}>
-          MSSE Capstone
-        </Title>
+        <DatabaseOutlined
+          style={{ fontSize: 24, color: '#fff', marginRight: 12 }}
+        />
+        <Text style={{ color: '#fff', fontSize: 16, fontWeight: 500 }}>
+          Natural Language to SQL
+        </Text>
       </Header>
       <Content style={{ padding: '48px 24px' }}>
         <QueryPage />

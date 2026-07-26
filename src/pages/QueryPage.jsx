@@ -1,16 +1,25 @@
 import { useState } from 'react'
 import { Input, Button, Table, Card, Typography, Tag, Spin, Alert, Collapse, Empty } from 'antd'
-import { SearchOutlined, ClearOutlined, CodeOutlined } from '@ant-design/icons'
+import {
+  SearchOutlined,
+  ClearOutlined,
+  CodeOutlined,
+  ClockCircleOutlined,
+  BulbOutlined,
+  DatabaseOutlined,
+} from '@ant-design/icons'
 import useQueryStore from '../stores/useQueryStore'
 
-const { Title, Text } = Typography
+const { Title, Text, Paragraph } = Typography
 const { TextArea } = Input
 
 function QueryPage() {
   const {
+    summary,
     sql,
     rows,
     rowCount,
+    executionTime,
     loading,
     error,
     submitQuery,
@@ -46,24 +55,35 @@ function QueryPage() {
       }))
     : []
 
+  const hasResults = !loading && (summary || sql || rows.length > 0 || error)
+
   return (
     <div style={{ maxWidth: 900, margin: '0 auto' }}>
-      <Title level={2}>Ask a Question</Title>
-      <Text type="secondary">
-        Ask a natural language question about your database and get SQL results.
-      </Text>
+      <div style={{ textAlign: 'center', marginBottom: 32 }}>
+        <Title level={2} style={{ marginBottom: 8 }}>
+          Ask a Question
+        </Title>
+        <Text type="secondary" style={{ fontSize: 16 }}>
+          Query your database using natural language — no SQL required.
+        </Text>
+      </div>
 
-      <Card style={{ marginTop: 24 }}>
+      <Card
+        style={{
+          marginBottom: 24,
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)',
+        }}
+      >
         <TextArea
           rows={3}
-          placeholder='e.g. "total sales by region" or "which customer has the most orders"'
+          placeholder='e.g. "Show me total sales by region for Q1" or "Which customer has the most orders?"'
           value={localQuestion}
           onChange={(e) => setLocalQuestion(e.target.value)}
           onKeyDown={handleKeyDown}
           disabled={loading}
-          style={{ fontSize: 16 }}
+          style={{ fontSize: 15, marginBottom: 12 }}
         />
-        <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8 }}>
           <Button
             type="primary"
             icon={<SearchOutlined />}
@@ -90,22 +110,47 @@ function QueryPage() {
           message="Query Failed"
           description={error}
           showIcon
-          style={{ marginTop: 16 }}
+          style={{ marginBottom: 16 }}
           closable
         />
       )}
 
       {loading && (
-        <Card style={{ marginTop: 16, textAlign: 'center' }}>
+        <Card style={{ textAlign: 'center', padding: '32px 0' }}>
           <Spin size="large" />
           <div style={{ marginTop: 16 }}>
-            <Text type="secondary">Generating SQL and running query...</Text>
+            <Text type="secondary" style={{ fontSize: 15 }}>
+              Analyzing schema and generating SQL...
+            </Text>
+          </div>
+        </Card>
+      )}
+
+      {summary && !loading && (
+        <Card
+          className="summary-card"
+          style={{ marginBottom: 16 }}
+        >
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+            <BulbOutlined
+              style={{ fontSize: 18, color: '#52c41a', marginTop: 3 }}
+            />
+            <div>
+              <Text strong style={{ fontSize: 14, color: '#52c41a' }}>
+                Summary
+              </Text>
+              <Paragraph
+                style={{ marginTop: 4, marginBottom: 0, fontSize: 15 }}
+              >
+                {summary}
+              </Paragraph>
+            </div>
           </div>
         </Card>
       )}
 
       {sql && !loading && (
-        <Card style={{ marginTop: 16 }}>
+        <Card style={{ marginBottom: 16 }}>
           <Collapse
             items={[
               {
@@ -116,17 +161,7 @@ function QueryPage() {
                   </span>
                 ),
                 children: (
-                  <pre
-                    style={{
-                      margin: 0,
-                      background: '#f5f5f5',
-                      padding: 16,
-                      borderRadius: 8,
-                      overflow: 'auto',
-                    }}
-                  >
-                    {sql}
-                  </pre>
+                  <pre className="sql-block">{sql}</pre>
                 ),
               },
             ]}
@@ -135,22 +170,41 @@ function QueryPage() {
       )}
 
       {!loading && rows.length > 0 && (
-        <Card style={{ marginTop: 16 }}>
-          <div style={{ marginBottom: 12 }}>
-            <Tag color="blue">{rowCount} row{rowCount !== 1 ? 's' : ''}</Tag>
+        <Card>
+          <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <DatabaseOutlined style={{ color: '#1677ff' }} />
+            <Tag color="blue">
+              {rowCount} row{rowCount !== 1 ? 's' : ''}
+            </Tag>
+            {executionTime !== null && (
+              <Tag color="default">
+                <ClockCircleOutlined /> {executionTime}s
+              </Tag>
+            )}
           </div>
           <Table
             columns={columns}
             dataSource={rows.map((row, i) => ({ ...row, key: i }))}
-            pagination={{ pageSize: 10 }}
+            pagination={{ pageSize: 10, showSizeChanger: false }}
             size="middle"
             scroll={{ x: 'max-content' }}
           />
         </Card>
       )}
 
+      {!loading && !hasResults && (
+        <Card style={{ textAlign: 'center', padding: '48px 0' }}>
+          <DatabaseOutlined style={{ fontSize: 48, color: '#d9d9d9', marginBottom: 16 }} />
+          <div>
+            <Text type="secondary" style={{ fontSize: 15 }}>
+              Ask a question above to get started.
+            </Text>
+          </div>
+        </Card>
+      )}
+
       {!loading && !error && sql && rows.length === 0 && (
-        <Card style={{ marginTop: 16 }}>
+        <Card style={{ textAlign: 'center', padding: '32px 0' }}>
           <Empty description="No results returned" />
         </Card>
       )}
