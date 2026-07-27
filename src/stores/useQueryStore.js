@@ -3,10 +3,12 @@ import { create } from 'zustand'
 const useQueryStore = create((set) => ({
   question: '',
   summary: null,
+  chartSpec: null,
   sql: null,
   rows: [],
   rowCount: 0,
   executionTime: null,
+  noQuery: false,
   loading: false,
   error: null,
 
@@ -17,10 +19,12 @@ const useQueryStore = create((set) => ({
       loading: true,
       error: null,
       summary: null,
+      chartSpec: null,
       sql: null,
       rows: [],
       rowCount: 0,
       executionTime: null,
+      noQuery: false,
     })
     try {
       const res = await fetch('/api/query', {
@@ -34,10 +38,12 @@ const useQueryStore = create((set) => ({
       }
       set({
         summary: data.summary,
+        chartSpec: data.chart_spec,
         sql: data.sql,
         rows: data.rows,
         rowCount: data.row_count,
         executionTime: data.execution_time,
+        noQuery: data.no_query || false,
         loading: false,
       })
     } catch (err) {
@@ -49,10 +55,12 @@ const useQueryStore = create((set) => ({
     set({
       question: '',
       summary: null,
+      chartSpec: null,
       sql: null,
       rows: [],
       rowCount: 0,
       executionTime: null,
+      noQuery: false,
       error: null,
     }),
 }))
