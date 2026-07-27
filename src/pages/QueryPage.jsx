@@ -11,10 +11,16 @@ import {
   ReloadOutlined,
 } from '@ant-design/icons'
 import { Bar, Column, Line, Pie, Scatter } from '@ant-design/charts'
+import { format } from 'sql-formatter'
+import hljs from 'highlight.js/lib/core'
+import postgresql from 'highlight.js/lib/languages/sql'
+import 'highlight.js/styles/github.css'
 import * as html2canvas from 'html2canvas'
 import jsPDF from 'jspdf'
 import * as XLSX from 'xlsx'
 import useQueryStore from '../stores/useQueryStore'
+
+hljs.registerLanguage('postgresql', postgresql)
 
 const { Title, Text, Paragraph } = Typography
 const { TextArea } = Input
@@ -286,17 +292,26 @@ function QueryPage() {
 
           {!loading && renderChart()}
 
-          {sql && !loading && (
-            <Card style={{ marginBottom: 16 }}>
-              <Collapse
-                items={[{
-                  key: 'sql',
-                  label: <span><CodeOutlined /> Generated SQL</span>,
-                  children: <pre className="sql-block">{sql}</pre>,
-                }]}
-              />
-            </Card>
-          )}
+          {sql && !loading && (() => {
+            const formatted = format(sql, { language: 'postgresql', tabWidth: 2 })
+            const highlighted = hljs.highlight(formatted, { language: 'postgresql' }).value
+            return (
+              <Card style={{ marginBottom: 16 }}>
+                <Collapse
+                  defaultActiveKey={['sql']}
+                  items={[{
+                    key: 'sql',
+                    label: <span><CodeOutlined /> Generated SQL</span>,
+                    children: (
+                      <pre className="sql-block">
+                        <code dangerouslySetInnerHTML={{ __html: highlighted }} />
+                      </pre>
+                    ),
+                  }]}
+                />
+              </Card>
+            )
+          })()}
 
           {!loading && rows.length > 0 && !noQuery && (
             <Card>
