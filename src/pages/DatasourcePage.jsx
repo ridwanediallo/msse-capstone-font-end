@@ -110,10 +110,10 @@ function DatasourcePage() {
   ]
 
   return (
-    <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+    <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div>
-          <Title level={2} style={{ marginBottom: 4 }}>Data Sources</Title>
+          <Title level={3} style={{ marginBottom: 4 }}>Data Sources</Title>
           <Text type="secondary">Connect and manage your databases</Text>
         </div>
         <Button

@@ -10,6 +10,26 @@ body {
   min-height: 100vh;
 }
 
+/* Sidebar logo */
+.logo {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 8px;
+}
+
+/* Content area */
+.site-layout-content {
+  margin: 24px;
+  padding: 32px;
+  background: #fff;
+  border-radius: 12px;
+  min-height: calc(100vh - 48px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
 /* Table alternating rows */
 .ant-table-tbody > tr:nth-child(even) > td {
   background: #fafafa;
@@ -39,4 +59,14 @@ body {
   font-size: inherit;
   background: transparent;
   padding: 0;
+}
+
+/* Sidebar menu hover */
+.ant-menu-dark .ant-menu-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Sidebar selected item */
+.ant-menu-dark .ant-menu-item-selected {
+  background: #1677ff;
 }
