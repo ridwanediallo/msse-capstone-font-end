@@ -1,10 +1,10 @@
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom'
-import { Layout, Typography, Menu } from 'antd'
-import { DatabaseOutlined, SearchOutlined, ApiOutlined } from '@ant-design/icons'
+import { Layout, Menu, Typography } from 'antd'
+import { SearchOutlined, DatabaseOutlined, BarChartOutlined } from '@ant-design/icons'
 import QueryPage from './pages/QueryPage'
 import DatasourcePage from './pages/DatasourcePage'
 
-const { Header, Content } = Layout
+const { Sider, Content } = Layout
 const { Text } = Typography
 
 function AppLayout() {
@@ -19,7 +19,7 @@ function AppLayout() {
     },
     {
       key: '/datasources',
-      icon: <ApiOutlined />,
+      icon: <DatabaseOutlined />,
       label: 'Data Sources',
     },
   ]
@@ -28,37 +28,40 @@ function AppLayout() {
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
-      <Header
+      <Sider
+        width={220}
+        theme="dark"
         style={{
-          display: 'flex',
-          alignItems: 'center',
-          background: 'linear-gradient(135deg, #001529 0%, #003a8c 100%)',
-          padding: '0 32px',
-          height: 72,
-          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+          overflow: 'auto',
+          height: '100vh',
+          position: 'fixed',
+          left: 0,
+          top: 0,
+          bottom: 0,
         }}
       >
-        <DatabaseOutlined
-          style={{ fontSize: 24, color: '#fff', marginRight: 12 }}
-        />
-        <Text style={{ color: '#fff', fontSize: 16, fontWeight: 500, marginRight: 32 }}>
-          Natural Language to SQL
-        </Text>
+        <div className="logo">
+          <BarChartOutlined style={{ fontSize: 20, marginRight: 8 }} />
+          <Text style={{ color: '#fff', fontSize: 16, fontWeight: 600 }}>
+            NL → SQL
+          </Text>
+        </div>
         <Menu
           theme="dark"
-          mode="horizontal"
+          mode="inline"
           selectedKeys={[selectedKey]}
           items={menuItems}
           onClick={({ key }) => navigate(key)}
-          style={{ flex: 1, background: 'transparent', borderBottom: 'none' }}
         />
-      </Header>
-      <Content style={{ padding: '48px 24px' }}>
-        <Routes>
-          <Route path="/" element={<QueryPage />} />
-          <Route path="/datasources" element={<DatasourcePage />} />
-        </Routes>
-      </Content>
+      </Sider>
+      <Layout style={{ marginLeft: 220 }}>
+        <Content className="site-layout-content">
+          <Routes>
+            <Route path="/" element={<QueryPage />} />
+            <Route path="/datasources" element={<DatasourcePage />} />
+          </Routes>
+        </Content>
+      </Layout>
     </Layout>
   )
 }

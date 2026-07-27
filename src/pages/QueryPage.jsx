@@ -162,17 +162,17 @@ function QueryPage() {
   }
 
   return (
-    <div style={{ maxWidth: 900, margin: '0 auto' }}>
-      <div style={{ textAlign: 'center', marginBottom: 32 }}>
-        <Title level={2} style={{ marginBottom: 8 }}>
-          Ask a Question
+    <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+      <div style={{ marginBottom: 24 }}>
+        <Title level={3} style={{ marginBottom: 4 }}>
+          Query
         </Title>
-        <Text type="secondary" style={{ fontSize: 16 }}>
-          Query your database using natural language — no SQL required.
+        <Text type="secondary">
+          Ask questions about your data in plain English.
         </Text>
       </div>
 
-      <Card style={{ marginBottom: 24, boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)' }}>
+      <Card style={{ marginBottom: 24 }}>
         <TextArea
           rows={3}
           placeholder='e.g. "Show me total sales by region for Q1" or "Which customer has the most orders?"'
