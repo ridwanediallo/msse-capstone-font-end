@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { apiUrl } from '../api.js'
 
 const useQueryStore = create((set, get) => ({
   loading: false,
@@ -23,7 +24,7 @@ const useQueryStore = create((set, get) => ({
       if (!conversationId && dataSourceId) {
         body.data_source_id = dataSourceId
       }
-      const res = await fetch('/api/query', {
+      const res = await fetch(apiUrl('/query'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -65,7 +66,7 @@ const useQueryStore = create((set, get) => ({
   fetchConversations: async () => {
     set({ conversationsLoading: true })
     try {
-      const res = await fetch('/api/conversations')
+      const res = await fetch(apiUrl('/conversations'))
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`)
       set({ conversations: data, conversationsLoading: false })
@@ -77,7 +78,7 @@ const useQueryStore = create((set, get) => ({
   loadConversation: async (id) => {
     set({ loading: true, error: null })
     try {
-      const res = await fetch(`/api/conversations/${id}`)
+      const res = await fetch(apiUrl(`/conversations/${id}`))
       const data = await res.json()
       if (!res.ok) {
         throw new Error(data.error || `HTTP ${res.status}`)
@@ -110,7 +111,7 @@ const useQueryStore = create((set, get) => ({
 
   deleteConversation: async (id) => {
     try {
-      const res = await fetch(`/api/conversations/${id}`, { method: 'DELETE' })
+      const res = await fetch(apiUrl(`/conversations/${id}`), { method: 'DELETE' })
       if (!res.ok) {
         const data = await res.json()
         throw new Error(data.error || `HTTP ${res.status}`)

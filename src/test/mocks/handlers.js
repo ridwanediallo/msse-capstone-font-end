@@ -105,24 +105,24 @@ const queryResponse = (question) => ({
 })
 
 export const handlers = [
-  http.get('/api/datasources', () => HttpResponse.json(datasources)),
-  http.post('/api/datasources', () =>
+  http.get('/api/v1/datasources', () => HttpResponse.json(datasources)),
+  http.post('/api/v1/datasources', () =>
     HttpResponse.json(
       { ...datasources[0], id: 'ds-new', name: 'new-ds' },
       { status: 201 },
     ),
   ),
-  http.get('/api/datasources/:id', ({ params }) => {
+  http.get('/api/v1/datasources/:id', ({ params }) => {
     const ds = datasources.find((d) => d.id === params.id)
     return ds ? HttpResponse.json(ds) : HttpResponse.json({ error: 'Not found' }, { status: 404 })
   }),
-  http.delete('/api/datasources/:id', () =>
+  http.delete('/api/v1/datasources/:id', () =>
     HttpResponse.json({ ok: true }),
   ),
-  http.post('/api/datasources/test-connection', () =>
+  http.post('/api/v1/datasources/test-connection', () =>
     HttpResponse.json({ success: true, message: 'Connection successful' }),
   ),
-  http.post('/api/datasources/:id/introspect', () =>
+  http.post('/api/v1/datasources/:id/introspect', () =>
     HttpResponse.json([
       {
         id: 'cat-1',
@@ -133,7 +133,7 @@ export const handlers = [
       },
     ]),
   ),
-  http.put('/api/datasources/:id/schema/:catalogId', ({ params }) =>
+  http.put('/api/v1/datasources/:id/schema/:catalogId', ({ params }) =>
     HttpResponse.json({
       id: params.catalogId,
       table_name: 'customers',
@@ -143,14 +143,14 @@ export const handlers = [
     }),
   ),
 
-  http.post('/api/query', async ({ request }) => {
+  http.post('/api/v1/query', async ({ request }) => {
     const body = await request.json()
     return HttpResponse.json(queryResponse(body.question))
   }),
 
-  http.get('/api/conversations', () => HttpResponse.json(conversations)),
-  http.get('/api/conversations/:id', () =>
+  http.get('/api/v1/conversations', () => HttpResponse.json(conversations)),
+  http.get('/api/v1/conversations/:id', () =>
     HttpResponse.json({ ...conversations[0], turns }),
   ),
-  http.delete('/api/conversations/:id', () => HttpResponse.json({ ok: true })),
+  http.delete('/api/v1/conversations/:id', () => HttpResponse.json({ ok: true })),
 ]

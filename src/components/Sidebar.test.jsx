@@ -36,7 +36,7 @@ describe('Sidebar', () => {
 
   it('shows an empty state when there are no sessions', async () => {
     server.use(
-      http.get('/api/conversations', () => HttpResponse.json([])),
+      http.get('/api/v1/conversations', () => HttpResponse.json([])),
     )
     renderSidebar()
     expect(await screen.findByText('No sessions yet')).toBeInTheDocument()
