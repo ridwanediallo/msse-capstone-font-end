@@ -1,14 +1,10 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import { Table, Button, Alert, Tooltip, message } from 'antd'
 import {
-  Input, Button, Table, Card, Typography, Tag, Spin, Alert,
-  Collapse, Empty, Space, Steps,
-} from 'antd'
-import {
-  SearchOutlined, ClearOutlined, CodeOutlined, BulbOutlined,
-  DatabaseOutlined, ClockCircleOutlined,
-  FilePdfOutlined, FileExcelOutlined, LineChartOutlined,
-  BarChartOutlined, PieChartOutlined,
-  ReloadOutlined,
+  CheckSquareOutlined, LoadingOutlined, BorderOutlined,
+  CodeOutlined, CopyOutlined, TableOutlined,
+  FilePdfOutlined, FileExcelOutlined, ArrowRightOutlined,
+  ReloadOutlined, DatabaseOutlined,
 } from '@ant-design/icons'
 import { Bar, Column, Line, Pie, Scatter } from '@ant-design/charts'
 import { format } from 'sql-formatter'
@@ -22,9 +18,6 @@ import useQueryStore from '../stores/useQueryStore'
 
 hljs.registerLanguage('postgresql', postgresql)
 
-const { Title, Text, Paragraph } = Typography
-const { TextArea } = Input
-
 const chartComponents = {
   bar: Bar,
   line: Line,
@@ -33,25 +26,23 @@ const chartComponents = {
   column: Column,
 }
 
-const chartIcons = {
-  bar: <BarChartOutlined />,
-  line: <LineChartOutlined />,
-  pie: <PieChartOutlined />,
-  scatter: <BarChartOutlined />,
-  column: <BarChartOutlined />,
-}
+const PIPELINE_STEPS = [
+  'Schema analyzed',
+  'Query written',
+  'Validated',
+  'Data retrieved',
+  'Report composed',
+]
 
 function parseSuggestions(text) {
   if (!text) return []
   const match = text.match(/SUGGESTIONS:\s*([\s\S]*)/i)
   if (!match) return []
-  const lines = match[1].trim().split('\n')
-  const suggestions = []
-  for (const line of lines) {
-    const cleaned = line.replace(/^\d+\.\s*/, '').trim()
-    if (cleaned) suggestions.push(cleaned)
-  }
-  return suggestions
+  return match[1]
+    .trim()
+    .split('\n')
+    .map((line) => line.replace(/^\d+\.\s*/, '').replace(/^-\s*/, '').trim())
+    .filter(Boolean)
 }
 
 function stripSuggestions(text) {
@@ -59,46 +50,102 @@ function stripSuggestions(text) {
   return text.replace(/SUGGESTIONS:\s*[\s\S]*/i, '').trim()
 }
 
-function QueryPage() {
-  const {
-    summary, chartSpec, sql, rows, rowCount, executionTime, noQuery,
-    loading, error, submitQuery, reset,
-  } = useQueryStore()
+function labelize(field) {
+  return String(field).replace(/_/g, ' ')
+}
 
-  const [localQuestion, setLocalQuestion] = useState('')
+const numberFmt = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 })
+
+function deriveKpis(turn) {
+  // Prefer real KPIs computed by the backend from actual query results
+  if (turn.kpis && turn.kpis.length > 0) {
+    return turn.kpis
+  }
+
+  const { chartSpec, rows } = turn
+  if (!chartSpec || !chartSpec.x || !chartSpec.y || !rows || rows.length === 0) {
+    return []
+  }
+  const x = chartSpec.x
+  const y = chartSpec.y
+  const values = rows
+    .map((r) => Number(r[y]))
+    .filter((v) => !Number.isNaN(v))
+  if (values.length === 0) return []
+
+  let top = rows[0]
+  for (const r of rows) {
+    if (Number(r[y]) > Number(top[y])) top = r
+  }
+  const total = values.reduce((a, b) => a + b, 0)
+
+  return [
+    { label: `Top ${labelize(x)}`, value: String(top[x]) },
+    { label: labelize(y), value: numberFmt.format(Number(top[y])) },
+    { label: `Total ${labelize(y)}`, value: numberFmt.format(total) },
+  ]
+}
+
+function PipelineChips({ steps, doneCount, activeIndex }) {
+  return (
+    <div className="pipeline-chips">
+      {steps.map((label, i) => {
+        const done = i < doneCount
+        const active = i === activeIndex
+        return (
+          <span key={label} className={'pipeline-chip' + (done || active ? '' : ' pending')}>
+            {done ? (
+              <CheckSquareOutlined />
+            ) : active ? (
+              <LoadingOutlined spin style={{ color: 'var(--accent)' }} />
+            ) : (
+              <BorderOutlined />
+            )}
+            {label}
+          </span>
+        )
+      })}
+    </div>
+  )
+}
+
+function UserBubble({ turn }) {
+  return (
+    <div className="user-bubble">
+      {turn.question}
+      {turn.questionResolved && (
+        <span className="resolved">Resolved to: {turn.questionResolved}</span>
+      )}
+    </div>
+  )
+}
+
+function ReportPanel({ turn, isLatest }) {
+  const [showSql, setShowSql] = useState(isLatest)
+  const [showData, setShowData] = useState(false)
   const reportRef = useRef(null)
 
-  const handleSubmit = () => {
-    const q = localQuestion.trim()
-    if (!q) return
-    submitQuery(q)
-  }
+  const kpis = deriveKpis(turn)
+  const narrative = stripSuggestions(turn.summary)
 
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      handleSubmit()
+  const columns =
+    turn.rows && turn.rows.length > 0
+      ? Object.keys(turn.rows[0]).map((key) => ({
+          title: key,
+          dataIndex: key,
+          key,
+          render: (val) => (val !== null && val !== undefined ? String(val) : '-'),
+        }))
+      : []
+
+  const handleCopySql = async () => {
+    try {
+      await navigator.clipboard.writeText(turn.sql)
+      message.success('SQL copied')
+    } catch {
+      message.error('Could not copy')
     }
   }
-
-  const handleClear = () => {
-    setLocalQuestion('')
-    reset()
-  }
-
-  const handleRetry = () => {
-    const q = localQuestion.trim()
-    if (q) submitQuery(q)
-  }
-
-  const columns = rows.length > 0
-    ? Object.keys(rows[0]).map((key) => ({
-        title: key,
-        dataIndex: key,
-        key,
-        render: (val) => (val !== null && val !== undefined ? String(val) : '-'),
-      }))
-    : []
 
   const handleExportPDF = async () => {
     if (!reportRef.current) return
@@ -111,259 +158,291 @@ function QueryPage() {
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight)
       pdf.save('query-report.pdf')
     } catch {
-      // Silently fail — PDF export is best-effort
+      message.error('PDF export failed')
     }
   }
 
   const handleExportExcel = () => {
-    if (rows.length === 0) return
-    const ws = XLSX.utils.json_to_sheet(rows)
+    if (!turn.rows || turn.rows.length === 0) return
+    const ws = XLSX.utils.json_to_sheet(turn.rows)
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, 'Results')
     XLSX.writeFile(wb, 'query-results.xlsx')
   }
 
-  const hasResults = !loading && (summary || sql || rows.length > 0 || error)
-
   const renderChart = () => {
-    if (!chartSpec || !chartSpec.type || chartSpec.type === 'none' || rows.length === 0) return null
-
-    const ChartComponent = chartComponents[chartSpec.type]
+    const spec = turn.chartSpec
+    if (!spec || !spec.type || spec.type === 'none' || !turn.rows || turn.rows.length === 0) {
+      return null
+    }
+    const ChartComponent = chartComponents[spec.type]
     if (!ChartComponent) return null
 
     const chartProps = {
-      data: rows,
-      xField: chartSpec.x,
-      yField: chartSpec.y,
-      height: 300,
-      color: '#1677ff',
+      data: turn.rows,
+      xField: spec.x,
+      yField: spec.y,
+      height: 280,
+      color: '#3b82f6',
     }
-
-    if (chartSpec.type === 'pie') {
-      chartProps.angleField = chartSpec.y
-      chartProps.colorField = chartSpec.x
+    if (spec.type === 'pie') {
+      chartProps.angleField = spec.y
+      chartProps.colorField = spec.x
       delete chartProps.xField
       delete chartProps.yField
     }
 
     return (
-      <Card
-        style={{ marginBottom: 16 }}
-        title={
-          <span>
-            {chartIcons[chartSpec.type] || <BarChartOutlined />}
-            {' '}{chartSpec.title || 'Visualization'}
-          </span>
-        }
-      >
+      <div className="chart-card">
         <ChartComponent {...chartProps} />
-      </Card>
+      </div>
     )
   }
 
+  const pipelineSteps = turn.noQuery
+    ? ['Schema analyzed', 'Report composed']
+    : PIPELINE_STEPS
+
   return (
-    <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-      <div style={{ marginBottom: 24 }}>
-        <Title level={3} style={{ marginBottom: 4 }}>
-          Query
-        </Title>
-        <Text type="secondary">
-          Ask questions about your data in plain English.
-        </Text>
-      </div>
+    <div className="report-panel" ref={reportRef}>
+      <PipelineChips steps={pipelineSteps} doneCount={pipelineSteps.length} activeIndex={-1} />
 
-      <Card style={{ marginBottom: 24 }}>
-        <TextArea
-          rows={3}
-          placeholder='e.g. "Show me total sales by region for Q1" or "Which customer has the most orders?"'
-          value={localQuestion}
-          onChange={(e) => setLocalQuestion(e.target.value)}
-          onKeyDown={handleKeyDown}
-          disabled={loading}
-          style={{ fontSize: 15, marginBottom: 12 }}
-        />
-        <div style={{ display: 'flex', gap: 8 }}>
-          <Button
-            type="primary"
-            icon={<SearchOutlined />}
-            onClick={handleSubmit}
-            loading={loading}
-            disabled={!localQuestion.trim()}
-            size="large"
-          >
-            Run Query
-          </Button>
-          <Button icon={<ClearOutlined />} onClick={handleClear} disabled={loading}>
-            Clear
-          </Button>
+      {!turn.noQuery && kpis.length > 0 && (
+        <div className="kpi-row">
+          {kpis.map((kpi) => (
+            <div className="kpi-card" key={kpi.label}>
+              <div className="kpi-label" title={kpi.label}>{kpi.label}</div>
+              <div
+                className={
+                  'kpi-value' +
+                  (kpi.trend === 'up' ? ' positive' : kpi.trend === 'down' ? ' negative' : '')
+                }
+                title={kpi.value}
+              >
+                {kpi.value}
+              </div>
+            </div>
+          ))}
         </div>
-      </Card>
-
-      {error && (
-        <Alert
-          type="error"
-          message="Query Failed"
-          description={error}
-          showIcon
-          style={{ marginBottom: 16 }}
-          closable
-          action={
-            <Button size="small" icon={<ReloadOutlined />} onClick={handleRetry}>
-              Retry
-            </Button>
-          }
-        />
       )}
 
-      {loading && (
-        <Card style={{ textAlign: 'center', padding: '32px 0' }}>
-          <Spin size="large" />
-          <div style={{ marginTop: 16 }}>
-            <Steps
-              size="small"
-              current={-1}
-              items={[
-                { title: 'Analyzing schema' },
-                { title: 'Generating SQL' },
-                { title: 'Running query' },
-                { title: 'Composing report' },
-              ]}
-              style={{ maxWidth: 500, margin: '0 auto' }}
-            />
+      {renderChart()}
+
+      {narrative && <p className="narrative">{narrative}</p>}
+
+      {(turn.sql || (turn.rows && turn.rows.length > 0)) && (
+        <>
+          <hr className="report-divider" />
+          <div className="report-toggles">
+            {turn.sql && (
+              <>
+                <button className="link-toggle" onClick={() => setShowSql(!showSql)}>
+                  <CodeOutlined /> View SQL
+                </button>
+                <Tooltip title="Copy SQL">
+                  <button className="icon-btn" onClick={handleCopySql}>
+                    <CopyOutlined />
+                  </button>
+                </Tooltip>
+              </>
+            )}
+            {turn.rows && turn.rows.length > 0 && !turn.noQuery && (
+              <>
+                <button className="link-toggle" onClick={() => setShowData(!showData)}>
+                  <TableOutlined /> View data
+                  <span style={{ color: 'var(--text-faint)', fontWeight: 400 }}>
+                    ({turn.rowCount} row{turn.rowCount !== 1 ? 's' : ''}
+                    {turn.executionTime != null ? ` · ${turn.executionTime}s` : ''})
+                  </span>
+                </button>
+                <Tooltip title="Export PDF">
+                  <button className="icon-btn" onClick={handleExportPDF}>
+                    <FilePdfOutlined />
+                  </button>
+                </Tooltip>
+                <Tooltip title="Export Excel">
+                  <button className="icon-btn" onClick={handleExportExcel}>
+                    <FileExcelOutlined />
+                  </button>
+                </Tooltip>
+              </>
+            )}
           </div>
-        </Card>
-      )}
 
-      {hasResults && (
-        <div ref={reportRef}>
-          {summary && !loading && (
-            <Card className="summary-card" style={{ marginBottom: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                <BulbOutlined style={{ fontSize: 18, color: '#52c41a', marginTop: 3 }} />
-                <div style={{ flex: 1 }}>
-                  <Text strong style={{ fontSize: 14, color: '#52c41a' }}>
-                    {noQuery ? 'Notice' : 'Summary'}
-                  </Text>
-                  <Paragraph style={{ marginTop: 4, marginBottom: 0, fontSize: 15 }}>
-                    {stripSuggestions(summary)}
-                  </Paragraph>
-                </div>
-              </div>
-            </Card>
+          {showSql && turn.sql && (
+            <pre className="sql-block">
+              <code
+                dangerouslySetInnerHTML={{
+                  __html: hljs.highlight(
+                    format(turn.sql, { language: 'postgresql', tabWidth: 2 }),
+                    { language: 'postgresql' }
+                  ).value,
+                }}
+              />
+            </pre>
           )}
 
-          {noQuery && !loading && parseSuggestions(summary).length > 0 && (
-            <Card
-              style={{
-                marginBottom: 16,
-                background: '#fffbe6',
-                border: '1px solid #ffe58f',
-              }}
-              title={
-                <span>
-                  <BulbOutlined style={{ color: '#faad14' }} /> Suggested Queries
-                </span>
-              }
-            >
-              <Space direction="vertical" style={{ width: '100%' }} size={8}>
-                {parseSuggestions(summary).map((suggestion, i) => (
-                  <Button
-                    key={i}
-                    block
-                    style={{
-                      textAlign: 'left',
-                      height: 'auto',
-                      padding: '10px 16px',
-                      whiteSpace: 'normal',
-                      borderColor: '#ffe58f',
-                    }}
-                    onClick={() => {
-                      setLocalQuestion(suggestion)
-                      submitQuery(suggestion)
-                    }}
-                  >
-                    <BulbOutlined style={{ color: '#faad14', marginRight: 8 }} />
-                    {suggestion}
-                  </Button>
-                ))}
-              </Space>
-            </Card>
-          )}
-
-          {!loading && renderChart()}
-
-          {sql && !loading && (() => {
-            const formatted = format(sql, { language: 'postgresql', tabWidth: 2 })
-            const highlighted = hljs.highlight(formatted, { language: 'postgresql' }).value
-            return (
-              <Card style={{ marginBottom: 16 }}>
-                <Collapse
-                  defaultActiveKey={['sql']}
-                  items={[{
-                    key: 'sql',
-                    label: <span><CodeOutlined /> Generated SQL</span>,
-                    children: (
-                      <pre className="sql-block">
-                        <code dangerouslySetInnerHTML={{ __html: highlighted }} />
-                      </pre>
-                    ),
-                  }]}
-                />
-              </Card>
-            )
-          })()}
-
-          {!loading && rows.length > 0 && !noQuery && (
-            <Card>
-              <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Space>
-                  <DatabaseOutlined style={{ color: '#1677ff' }} />
-                  <Tag color="blue">{rowCount} row{rowCount !== 1 ? 's' : ''}</Tag>
-                  {executionTime !== null && (
-                    <Tag color="default"><ClockCircleOutlined /> {executionTime}s</Tag>
-                  )}
-                  {chartSpec && chartSpec.type && chartSpec.type !== 'none' && (
-                    <Tag color="purple">{chartIcons[chartSpec.type]} {chartSpec.type}</Tag>
-                  )}
-                </Space>
-                <Space>
-                  <Button size="small" icon={<FilePdfOutlined />} onClick={handleExportPDF}>
-                    PDF
-                  </Button>
-                  <Button size="small" icon={<FileExcelOutlined />} onClick={handleExportExcel}>
-                    Excel
-                  </Button>
-                </Space>
-              </div>
+          {showData && turn.rows && turn.rows.length > 0 && (
+            <div className="data-card">
               <Table
                 columns={columns}
-                dataSource={rows.map((row, i) => ({ ...row, key: i }))}
-                pagination={{ pageSize: 10, showSizeChanger: false }}
-                size="middle"
+                dataSource={turn.rows.map((row, i) => ({ ...row, key: i }))}
+                pagination={{ pageSize: 5, showSizeChanger: false, size: 'small' }}
+                size="small"
                 scroll={{ x: 'max-content' }}
               />
-            </Card>
+            </div>
           )}
-        </div>
-      )}
-
-      {!loading && !hasResults && (
-        <Card style={{ textAlign: 'center', padding: '48px 0' }}>
-          <DatabaseOutlined style={{ fontSize: 48, color: '#d9d9d9', marginBottom: 16 }} />
-          <div>
-            <Text type="secondary" style={{ fontSize: 15 }}>
-              Ask a question above to get started.
-            </Text>
-          </div>
-        </Card>
-      )}
-
-      {!loading && !error && sql && rows.length === 0 && !noQuery && (
-        <Card style={{ textAlign: 'center', padding: '32px 0' }}>
-          <Empty description="No results returned" />
-        </Card>
+        </>
       )}
     </div>
+  )
+}
+
+function LoadingPanel() {
+  const [step, setStep] = useState(0)
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setStep((s) => Math.min(s + 1, PIPELINE_STEPS.length - 1))
+    }, 2500)
+    return () => clearInterval(timer)
+  }, [])
+
+  return (
+    <div className="report-panel">
+      <PipelineChips steps={PIPELINE_STEPS} doneCount={step} activeIndex={step} />
+      <p className="narrative" style={{ color: 'var(--text-faint)' }}>
+        Working on your report…
+      </p>
+    </div>
+  )
+}
+
+function QueryPage() {
+  const {
+    turns, loading, error, submitQuery, newConversation, conversationId,
+  } = useQueryStore()
+
+  const [localQuestion, setLocalQuestion] = useState('')
+  const threadEndRef = useRef(null)
+
+  useEffect(() => {
+    threadEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [turns.length, loading])
+
+  const handleSubmit = () => {
+    const q = localQuestion.trim()
+    if (!q || loading) return
+    submitQuery(q)
+    setLocalQuestion('')
+  }
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSubmit()
+    }
+  }
+
+  const handleRetry = () => {
+    const lastTurn = turns[turns.length - 1]
+    if (lastTurn) submitQuery(lastTurn.question)
+  }
+
+  const hasTurns = turns.length > 0
+  const latestTurn = hasTurns ? turns[turns.length - 1] : null
+  const suggestions = latestTurn && !loading ? parseSuggestions(latestTurn.summary) : []
+
+  return (
+    <>
+      <div className="thread">
+        <div className="thread-inner">
+          {!hasTurns && !loading && (
+            <div className="empty-state">
+              <DatabaseOutlined style={{ fontSize: 40, color: '#d4d4d2' }} />
+              <h2>Ask your data anything</h2>
+              <p>e.g. “What were our top 5 products by revenue last quarter?”</p>
+            </div>
+          )}
+
+          {turns.map((turn, i) => (
+            <div key={turn.id || i}>
+              <UserBubble turn={turn} />
+              {(turn.summary || turn.sql) && (
+                <ReportPanel turn={turn} isLatest={i === turns.length - 1 && !loading} />
+              )}
+            </div>
+          ))}
+
+          {loading && <LoadingPanel />}
+
+          {error && (
+            <Alert
+              type="error"
+              message="Query failed"
+              description={error}
+              showIcon
+              style={{ marginBottom: 16, borderRadius: 10 }}
+              closable
+              action={
+                <Button size="small" icon={<ReloadOutlined />} onClick={handleRetry}>
+                  Retry
+                </Button>
+              }
+            />
+          )}
+
+          {suggestions.length > 0 && (
+            <div className="suggestion-row">
+              {suggestions.map((s, i) => (
+                <button
+                  key={i}
+                  className="suggestion-chip"
+                  disabled={loading}
+                  onClick={() => submitQuery(s)}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div ref={threadEndRef} />
+        </div>
+      </div>
+
+      <div className="composer">
+        <div className="composer-inner">
+          <textarea
+            className="composer-input"
+            rows={1}
+            placeholder={
+              conversationId ? 'Ask a follow-up question' : 'Ask a question about your data'
+            }
+            value={localQuestion}
+            onChange={(e) => setLocalQuestion(e.target.value)}
+            onKeyDown={handleKeyDown}
+            disabled={loading}
+          />
+          <button
+            className="composer-send"
+            onClick={handleSubmit}
+            disabled={!localQuestion.trim() || loading}
+            title="Send"
+          >
+            <ArrowRightOutlined />
+          </button>
+        </div>
+        {hasTurns && (
+          <div style={{ maxWidth: 1000, margin: '6px auto 0', textAlign: 'right' }}>
+            <Button size="small" type="text" onClick={newConversation} disabled={loading}>
+              Start new session
+            </Button>
+          </div>
+        )}
+      </div>
+    </>
   )
 }
 
