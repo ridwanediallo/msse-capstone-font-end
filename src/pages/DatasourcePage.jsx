@@ -4,7 +4,7 @@ import {
 } from 'antd'
 import {
   PlusOutlined, DeleteOutlined, ReloadOutlined,
-  CheckCircleOutlined, EditOutlined,
+  CheckCircleOutlined,
 } from '@ant-design/icons'
 import useDatasourceStore from '../stores/useDatasourceStore'
 import DatasourceWizard from '../components/DatasourceWizard'
@@ -110,7 +110,7 @@ function DatasourcePage() {
   ]
 
   return (
-    <div>
+    <div className="page-pad">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div>
           <Title level={3} style={{ marginBottom: 4 }}>Data Sources</Title>

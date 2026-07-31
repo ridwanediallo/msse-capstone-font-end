@@ -9,27 +9,29 @@ createRoot(document.getElementById('root')).render(
     <ConfigProvider
       theme={{
         token: {
-          colorPrimary: '#1677ff',
+          colorPrimary: '#3b82f6',
+          colorInfo: '#3b82f6',
           borderRadius: 8,
-          colorBgLayout: '#f0f2f5',
-          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+          colorBgLayout: '#ffffff',
+          colorText: '#1f2328',
+          colorTextSecondary: '#6b7280',
+          colorBorder: '#e2e2e0',
+          colorBorderSecondary: '#ececea',
+          fontFamily:
+            '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
         },
         components: {
-          Layout: {
-            siderBg: '#001529',
-            bodyBg: '#f0f2f5',
-          },
-          Menu: {
-            darkItemBg: '#001529',
-            darkItemSelectedBg: '#1677ff',
-            darkItemHoverBg: 'rgba(255, 255, 255, 0.08)',
+          Button: {
+            defaultBorderColor: '#e2e2e0',
+            defaultShadow: 'none',
+            primaryShadow: 'none',
           },
           Card: {
-            boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px 0 rgba(0, 0, 0, 0.02)',
+            boxShadow: 'none',
           },
           Table: {
-            headerBg: '#fafafa',
-            rowHoverBg: '#e6f7ff',
+            headerBg: '#fafaf9',
+            rowHoverBg: '#f5f8ff',
           },
         },
       }}
