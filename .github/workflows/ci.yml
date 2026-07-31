@@ -25,7 +25,13 @@ jobs:
         run: npm run lint
 
       - name: Test
-        run: npm test
+        run: npm run coverage
+
+      - name: Upload coverage to Codecov
+        if: always()
+        uses: codecov/codecov-action@v5
+        with:
+          fail_ci_if_error: false
 
       - name: Build
         run: npm run build
