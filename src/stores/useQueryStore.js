@@ -1,49 +1,106 @@
 import { create } from 'zustand'
 
-const useQueryStore = create((set) => ({
-  question: '',
-  summary: null,
-  chartSpec: null,
-  sql: null,
-  rows: [],
-  rowCount: 0,
-  executionTime: null,
-  noQuery: false,
+const useQueryStore = create((set, get) => ({
   loading: false,
   error: null,
 
-  setQuestion: (question) => set({ question }),
+  conversationId: null,
+  dataSourceId: null,
+  turns: [],
+
+  // Sidebar / history list
+  conversations: [],
+  conversationsLoading: false,
+
+  setDataSourceId: (id) => set({ dataSourceId: id }),
 
   submitQuery: async (question) => {
-    set({
-      loading: true,
-      error: null,
-      summary: null,
-      chartSpec: null,
-      sql: null,
-      rows: [],
-      rowCount: 0,
-      executionTime: null,
-      noQuery: false,
-    })
+    const { conversationId, dataSourceId } = get()
+
+    set({ loading: true, error: null })
     try {
+      const body = { question, conversation_id: conversationId }
+      if (!conversationId && dataSourceId) {
+        body.data_source_id = dataSourceId
+      }
       const res = await fetch('/api/query', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question }),
+        body: JSON.stringify(body),
       })
       const data = await res.json()
       if (!res.ok) {
         throw new Error(data.error || `HTTP ${res.status}`)
       }
-      set({
+
+      const newTurn = {
+        id: data.turn_id,
+        question,
         summary: data.summary,
-        chartSpec: data.chart_spec,
         sql: data.sql,
         rows: data.rows,
         rowCount: data.row_count,
+        chartSpec: data.chart_spec,
+        kpis: data.kpis || null,
         executionTime: data.execution_time,
         noQuery: data.no_query || false,
+        questionResolved: data.question_resolved || null,
+      }
+
+      const isNewConversation = !conversationId
+
+      set((state) => ({
+        conversationId: data.conversation_id,
+        turns: [...state.turns, newTurn],
+        loading: false,
+      }))
+
+      // Refresh the recents list so a newly created session shows up
+      if (isNewConversation) get().fetchConversations()
+    } catch (err) {
+      set({ error: err.message, loading: false })
+    }
+  },
+
+  fetchConversations: async () => {
+    set({ conversationsLoading: true })
+    try {
+      const res = await fetch('/api/conversations')
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`)
+      set({ conversations: data, conversationsLoading: false })
+    } catch {
+      set({ conversationsLoading: false })
+    }
+  },
+
+  loadConversation: async (id) => {
+    set({ loading: true, error: null })
+    try {
+      const res = await fetch(`/api/conversations/${id}`)
+      const data = await res.json()
+      if (!res.ok) {
+        throw new Error(data.error || `HTTP ${res.status}`)
+      }
+
+      const turns = data.turns.map((t) => ({
+        id: t.id,
+        question: t.question_raw,
+        summary: t.summary,
+        sql: t.generated_sql,
+        rows: t.result_data || [],
+        rowCount: t.result_row_count || 0,
+        chartSpec: t.chart_spec,
+        kpis: t.kpis || null,
+        executionTime: t.execution_ms ? t.execution_ms / 1000 : null,
+        noQuery: t.no_query,
+        questionResolved: t.question_resolved || null,
+      }))
+
+      set({
+        conversationId: data.id,
+        dataSourceId: data.data_source_id || null,
+        turns,
         loading: false,
       })
     } catch (err) {
@@ -51,16 +108,29 @@ const useQueryStore = create((set) => ({
     }
   },
 
-  reset: () =>
+  deleteConversation: async (id) => {
+    try {
+      const res = await fetch(`/api/conversations/${id}`, { method: 'DELETE' })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || `HTTP ${res.status}`)
+      }
+      set((state) => ({
+        conversations: state.conversations.filter((c) => c.id !== id),
+        ...(state.conversationId === id
+          ? { conversationId: null, turns: [] }
+          : {}),
+      }))
+      return { ok: true }
+    } catch (err) {
+      return { ok: false, error: err.message }
+    }
+  },
+
+  newConversation: () =>
     set({
-      question: '',
-      summary: null,
-      chartSpec: null,
-      sql: null,
-      rows: [],
-      rowCount: 0,
-      executionTime: null,
-      noQuery: false,
+      conversationId: null,
+      turns: [],
       error: null,
     }),
 }))
