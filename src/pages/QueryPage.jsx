@@ -50,6 +50,16 @@ function stripSuggestions(text) {
   return text.replace(/SUGGESTIONS:\s*[\s\S]*/i, '').trim()
 }
 
+function formatSql(sql) {
+  // sql-formatter's parser can reject some generated/edge SQL; never crash
+  // the report panel — fall back to the raw query.
+  try {
+    return format(sql, { language: 'postgresql', tabWidth: 2 })
+  } catch {
+    return sql
+  }
+}
+
 function labelize(field) {
   return String(field).replace(/_/g, ' ')
 }
@@ -274,7 +284,7 @@ function ReportPanel({ turn, isLatest }) {
               <code
                 dangerouslySetInnerHTML={{
                   __html: hljs.highlight(
-                    format(turn.sql, { language: 'postgresql', tabWidth: 2 }),
+                    formatSql(turn.sql),
                     { language: 'postgresql' }
                   ).value,
                 }}
