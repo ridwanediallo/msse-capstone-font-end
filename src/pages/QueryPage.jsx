@@ -6,7 +6,6 @@ import {
   FilePdfOutlined, FileExcelOutlined, ArrowRightOutlined,
   ReloadOutlined, DatabaseOutlined,
 } from '@ant-design/icons'
-import { Bar, Column, Line, Pie, Scatter } from '@ant-design/charts'
 import { format } from 'sql-formatter'
 import hljs from 'highlight.js/lib/core'
 import postgresql from 'highlight.js/lib/languages/sql'
@@ -15,16 +14,9 @@ import * as html2canvas from 'html2canvas'
 import jsPDF from 'jspdf'
 import * as XLSX from 'xlsx'
 import useQueryStore from '../stores/useQueryStore'
+import ChartSpec from '../components/ChartSpec'
 
 hljs.registerLanguage('postgresql', postgresql)
-
-const chartComponents = {
-  bar: Bar,
-  line: Line,
-  pie: Pie,
-  scatter: Scatter,
-  column: Column,
-}
 
 const PIPELINE_STEPS = [
   'Schema analyzed',
@@ -171,32 +163,7 @@ function ReportPanel({ turn, isLatest }) {
   }
 
   const renderChart = () => {
-    const spec = turn.chartSpec
-    if (!spec || !spec.type || spec.type === 'none' || !turn.rows || turn.rows.length === 0) {
-      return null
-    }
-    const ChartComponent = chartComponents[spec.type]
-    if (!ChartComponent) return null
-
-    const chartProps = {
-      data: turn.rows,
-      xField: spec.x,
-      yField: spec.y,
-      height: 280,
-      color: '#3b82f6',
-    }
-    if (spec.type === 'pie') {
-      chartProps.angleField = spec.y
-      chartProps.colorField = spec.x
-      delete chartProps.xField
-      delete chartProps.yField
-    }
-
-    return (
-      <div className="chart-card">
-        <ChartComponent {...chartProps} />
-      </div>
-    )
+    return <ChartSpec spec={turn.chartSpec} rows={turn.rows} />
   }
 
   const pipelineSteps = turn.noQuery

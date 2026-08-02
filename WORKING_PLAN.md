@@ -110,7 +110,7 @@ section — frontend tasks are tracked there alongside backend counterparts.
 
 High-level frontend-specific stretch items:
 - [ ] Responsive / mobile layout pass
-- [ ] Chart color consistency across sessions
+- [x] Chart color consistency across sessions
 - [ ] Keyboard shortcuts (Cmd+Enter, etc.)
 - [ ] Dark mode toggle
 
