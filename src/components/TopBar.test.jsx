@@ -21,7 +21,7 @@ describe('TopBar', () => {
 
   it('shows "No data source" when the list is empty', async () => {
     server.use(
-      http.get('/api/datasources', () => HttpResponse.json([])),
+      http.get('/api/v1/datasources', () => HttpResponse.json([])),
     )
     renderTopBar()
     expect(await screen.findByText('No data source')).toBeInTheDocument()

@@ -49,7 +49,7 @@ describe('useQueryStore', () => {
     it('sends data_source_id when no conversation exists', async () => {
       let capturedBody = null
       server.use(
-        http.post('/api/query', async ({ request }) => {
+        http.post('/api/v1/query', async ({ request }) => {
           capturedBody = await request.json()
           return HttpResponse.json({
             summary: 'ok',
@@ -78,7 +78,7 @@ describe('useQueryStore', () => {
     it('does not send data_source_id for follow-ups in a conversation', async () => {
       let capturedBody = null
       server.use(
-        http.post('/api/query', async ({ request }) => {
+        http.post('/api/v1/query', async ({ request }) => {
           capturedBody = await request.json()
           return HttpResponse.json({
             summary: 'ok',
@@ -106,7 +106,7 @@ describe('useQueryStore', () => {
 
     it('sets error on failure', async () => {
       server.use(
-        http.post('/api/query', () =>
+        http.post('/api/v1/query', () =>
           HttpResponse.json({ error: 'LLM exploded' }, { status: 500 }),
         ),
       )
