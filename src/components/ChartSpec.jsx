@@ -1,7 +1,7 @@
 import { Bar, Column, Line, Pie, Scatter } from '@ant-design/charts'
 
-// Consistent palette shared across all chart types.
-const PALETTE = ['#3b82f6', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#84cc16']
+// Consistent palette shared across all chart types (brand-aligned).
+const PALETTE = ['#4f46e5', '#0d9488', '#f59e0b', '#ef4444', '#7c3aed', '#06b6d4', '#ec4899', '#84cc16']
 
 const COMPONENTS = { bar: Bar, column: Column, line: Line, pie: Pie, scatter: Scatter }
 
