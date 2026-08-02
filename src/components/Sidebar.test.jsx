@@ -1,10 +1,11 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Outlet, Route, Routes } from 'react-router-dom'
 import { http, HttpResponse } from 'msw'
 import { server } from '../test/mocks/server'
 import useQueryStore from '../stores/useQueryStore'
+import useDatasourceStore from '../stores/useDatasourceStore'
 import Sidebar from './Sidebar'
 
 const Layout = () => (
@@ -27,6 +28,10 @@ const renderSidebar = (initialEntry = '/') =>
   )
 
 describe('Sidebar', () => {
+  beforeEach(() => {
+    useDatasourceStore.getState().selectDatasource('ds-1')
+  })
+
   it('fetches and shows recents', async () => {
     renderSidebar()
     expect(
@@ -56,5 +61,21 @@ describe('Sidebar', () => {
     await waitFor(() => {
       expect(useQueryStore.getState().conversationId).toBe('conv-1')
     })
+  })
+
+  it('reloads scoped recents when the datasource changes', async () => {
+    renderSidebar()
+    expect(
+      await screen.findByText('How many students are in each major?'),
+    ).toBeInTheDocument()
+
+    useDatasourceStore.getState().selectDatasource('ds-2')
+
+    expect(
+      await screen.findByText('Top products by region'),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText('How many students are in each major?'),
+    ).toBeNull()
   })
 })

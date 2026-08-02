@@ -1,28 +1,27 @@
 import { create } from 'zustand'
 import { apiUrl } from '../api.js'
+import useDatasourceStore from './useDatasourceStore'
 
 const useQueryStore = create((set, get) => ({
   loading: false,
   error: null,
 
   conversationId: null,
-  dataSourceId: null,
   turns: [],
 
   // Sidebar / history list
   conversations: [],
   conversationsLoading: false,
 
-  setDataSourceId: (id) => set({ dataSourceId: id }),
-
   submitQuery: async (question) => {
-    const { conversationId, dataSourceId } = get()
+    const { conversationId } = get()
+    const { selectedDatasourceId } = useDatasourceStore.getState()
 
     set({ loading: true, error: null })
     try {
       const body = { question, conversation_id: conversationId }
-      if (!conversationId && dataSourceId) {
-        body.data_source_id = dataSourceId
+      if (!conversationId && selectedDatasourceId) {
+        body.data_source_id = selectedDatasourceId
       }
       const res = await fetch(apiUrl('/query'), {
         method: 'POST',
@@ -64,9 +63,16 @@ const useQueryStore = create((set, get) => ({
   },
 
   fetchConversations: async () => {
+    const { selectedDatasourceId } = useDatasourceStore.getState()
+    if (!selectedDatasourceId) {
+      set({ conversations: [], conversationsLoading: false })
+      return
+    }
     set({ conversationsLoading: true })
     try {
-      const res = await fetch(apiUrl('/conversations'))
+      const res = await fetch(
+        apiUrl(`/conversations?data_source_id=${encodeURIComponent(selectedDatasourceId)}`)
+      )
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`)
       set({ conversations: data, conversationsLoading: false })
@@ -98,9 +104,12 @@ const useQueryStore = create((set, get) => ({
         questionResolved: t.question_resolved || null,
       }))
 
+      if (data.data_source_id) {
+        useDatasourceStore.getState().selectDatasource(data.data_source_id)
+      }
+
       set({
         conversationId: data.id,
-        dataSourceId: data.data_source_id || null,
         turns,
         loading: false,
       })

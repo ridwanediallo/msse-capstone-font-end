@@ -19,20 +19,19 @@ function TopBar() {
   } = useDatasourceStore()
   const {
     conversations, fetchConversations, loadConversation, deleteConversation,
-    setDataSourceId, newConversation,
+    newConversation,
   } = useQueryStore()
 
   useEffect(() => {
     fetchDatasources()
   }, [fetchDatasources])
 
-  // Sync the query store's dataSourceId when datasources change
+  // Default to the first datasource when none is selected yet
   useEffect(() => {
     if (!selectedDatasourceId && datasources.length > 0) {
       selectDatasource(datasources[0].id)
-      setDataSourceId(datasources[0].id)
     }
-  }, [datasources, selectedDatasourceId, selectDatasource, setDataSourceId])
+  }, [datasources, selectedDatasourceId, selectDatasource])
 
   const selected =
     datasources.find((d) => d.id === selectedDatasourceId) || datasources[0]
@@ -44,8 +43,8 @@ function TopBar() {
       icon: <DatabaseOutlined />,
       onClick: () => {
         selectDatasource(d.id)
-        setDataSourceId(d.id)
         newConversation()
+        fetchConversations()
       },
     })),
     { type: 'divider' },

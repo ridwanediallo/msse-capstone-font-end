@@ -1,10 +1,11 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { http, HttpResponse } from 'msw'
 import { server } from '../test/mocks/server'
 import TopBar from './TopBar'
+import useDatasourceStore from '../stores/useDatasourceStore'
 
 const renderTopBar = () =>
   render(
@@ -14,6 +15,10 @@ const renderTopBar = () =>
   )
 
 describe('TopBar', () => {
+  beforeEach(() => {
+    useDatasourceStore.setState({ selectedDatasourceId: null })
+  })
+
   it('fetches datasources and shows the selected one', async () => {
     renderTopBar()
     expect(await screen.findByRole('button', { name: /school/i })).toBeInTheDocument()
@@ -33,5 +38,19 @@ describe('TopBar', () => {
     expect(
       await screen.findByText('How many students are in each major?'),
     ).toBeInTheDocument()
+  })
+
+  it('reloads a datasource-scoped list when the datasource changes', async () => {
+    renderTopBar()
+    await screen.findByRole('button', { name: /school/i })
+
+    await userEvent.click(screen.getByRole('button', { name: /school/i }))
+    await userEvent.click(await screen.findByText('sample_target'))
+
+    await userEvent.click(screen.getByRole('button', { name: /history/i }))
+    expect(
+      await screen.findByText('Top products by region'),
+    ).toBeInTheDocument()
+    expect(screen.queryByText('How many students are in each major?')).toBeNull()
   })
 })

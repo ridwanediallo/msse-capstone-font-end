@@ -2,22 +2,25 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { server } from '../test/mocks/server'
 import useQueryStore from './useQueryStore'
+import useDatasourceStore from './useDatasourceStore'
 
 const resetStore = () => {
   useQueryStore.setState({
     loading: false,
     error: null,
     conversationId: null,
-    dataSourceId: null,
     turns: [],
     conversations: [],
     conversationsLoading: false,
   })
 }
 
+const setDatasource = (id) => useDatasourceStore.getState().selectDatasource(id)
+
 describe('useQueryStore', () => {
   beforeEach(() => {
     resetStore()
+    useDatasourceStore.setState({ selectedDatasourceId: null })
   })
 
   describe('submitQuery', () => {
@@ -65,7 +68,7 @@ describe('useQueryStore', () => {
           })
         }),
       )
-      useQueryStore.setState({ dataSourceId: 'ds-2' })
+      setDatasource('ds-2')
       await useQueryStore.getState().submitQuery('question')
 
       expect(capturedBody).toMatchObject({
@@ -119,12 +122,26 @@ describe('useQueryStore', () => {
   })
 
   describe('fetchConversations', () => {
-    it('loads the conversation list', async () => {
+    it('loads conversations for the selected datasource', async () => {
+      setDatasource('ds-1')
       await useQueryStore.getState().fetchConversations()
-      expect(useQueryStore.getState().conversations).toHaveLength(1)
-      expect(useQueryStore.getState().conversations[0].title).toBe(
-        'How many students are in each major?',
-      )
+      const { conversations } = useQueryStore.getState()
+      expect(conversations).toHaveLength(1)
+      expect(conversations[0].title).toBe('How many students are in each major?')
+    })
+
+    it('filters by the selected datasource', async () => {
+      setDatasource('ds-2')
+      await useQueryStore.getState().fetchConversations()
+      const { conversations } = useQueryStore.getState()
+      expect(conversations).toHaveLength(1)
+      expect(conversations[0].data_source_id).toBe('ds-2')
+      expect(conversations[0].title).toBe('Top products by region')
+    })
+
+    it('returns an empty list when no datasource is selected', async () => {
+      await useQueryStore.getState().fetchConversations()
+      expect(useQueryStore.getState().conversations).toHaveLength(0)
     })
   })
 
@@ -140,6 +157,13 @@ describe('useQueryStore', () => {
       expect(state.turns[1].questionResolved).toBe(
         'What is the department with the most students?',
       )
+    })
+
+    it('syncs the selected datasource to the conversation', async () => {
+      setDatasource('ds-2')
+      await useQueryStore.getState().loadConversation('conv-1')
+
+      expect(useDatasourceStore.getState().selectedDatasourceId).toBe('ds-1')
     })
   })
 

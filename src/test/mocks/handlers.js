@@ -40,6 +40,14 @@ const conversations = [
     updated_at: '2026-07-30T00:00:00Z',
     turn_count: 2,
   },
+  {
+    id: 'conv-2',
+    data_source_id: 'ds-2',
+    title: 'Top products by region',
+    created_at: '2026-07-31T00:00:00Z',
+    updated_at: '2026-07-31T00:00:00Z',
+    turn_count: 1,
+  },
 ]
 
 const turns = [
@@ -148,7 +156,12 @@ export const handlers = [
     return HttpResponse.json(queryResponse(body.question))
   }),
 
-  http.get('/api/v1/conversations', () => HttpResponse.json(conversations)),
+  http.get('/api/v1/conversations', ({ request }) => {
+    const url = new URL(request.url)
+    const dsId = url.searchParams.get('data_source_id')
+    const list = dsId ? conversations.filter((c) => c.data_source_id === dsId) : conversations
+    return HttpResponse.json(list)
+  }),
   http.get('/api/v1/conversations/:id', () =>
     HttpResponse.json({ ...conversations[0], turns }),
   ),
