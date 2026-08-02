@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { PlusOutlined } from '@ant-design/icons'
 import useQueryStore from '../stores/useQueryStore'
+import useDatasourceStore from '../stores/useDatasourceStore'
 
 const MAX_RECENTS = 10
 
@@ -12,10 +13,12 @@ function Sidebar() {
     conversations, fetchConversations, loadConversation,
     newConversation, conversationId, loading,
   } = useQueryStore()
+  const selectedDatasourceId = useDatasourceStore((s) => s.selectedDatasourceId)
 
   useEffect(() => {
     fetchConversations()
-  }, [fetchConversations])
+    // Reload the scoped list whenever the selected datasource changes
+  }, [selectedDatasourceId, fetchConversations])
 
   const handleNewSession = () => {
     newConversation()
