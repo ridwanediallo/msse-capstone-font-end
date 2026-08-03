@@ -143,6 +143,17 @@ export const handlers = [
       },
     ]),
   ),
+  http.get('/api/v1/datasources/:id/suggestions', ({ params }) => {
+    const suggestions =
+      params.id === 'ds-1'
+        ? [
+            'How many students are in each major?',
+            'What are the top 5 majors by enrollment?',
+            'Which department has the most students?',
+          ]
+        : ['What is the total amount by status?']
+    return HttpResponse.json({ suggestions })
+  }),
   http.put('/api/v1/datasources/:id/schema/:catalogId', ({ params }) =>
     HttpResponse.json({
       id: params.catalogId,

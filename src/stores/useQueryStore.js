@@ -9,6 +9,10 @@ const useQueryStore = create((set, get) => ({
   conversationId: null,
   turns: [],
 
+  // New-session starter suggestions for the selected datasource
+  suggestions: [],
+  suggestionsLoading: false,
+
   // Sidebar / history list
   conversations: [],
   conversationsLoading: false,
@@ -141,8 +145,25 @@ const useQueryStore = create((set, get) => ({
     set({
       conversationId: null,
       turns: [],
+      suggestions: [],
       error: null,
     }),
+
+  fetchSuggestions: async (dsId) => {
+    if (!dsId) {
+      set({ suggestions: [], suggestionsLoading: false })
+      return
+    }
+    set({ suggestionsLoading: true })
+    try {
+      const res = await fetch(apiUrl(`/datasources/${dsId}/suggestions`))
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`)
+      set({ suggestions: data.suggestions || [], suggestionsLoading: false })
+    } catch {
+      set({ suggestions: [], suggestionsLoading: false })
+    }
+  },
 }))
 
 export default useQueryStore
