@@ -34,7 +34,8 @@ docs/description              # Documentation only
    git push origin feat/phase-X-description
 
 4. Create PR: feat → dev
-   - Review code
+   - Request review
+   - Wait for reviewer approval before merging
    - Merge via GitHub
 
 5. Delete feat branch after merge
@@ -73,6 +74,7 @@ chore: update dependencies
 ## PR Convention
 
 - Use GitHub Pull Requests — never push directly to `main` or `dev`
+- Never merge a PR that has not been approved by a reviewer
 - PR title should match commit format (e.g., `feat: Phase 9 — Conversation memory`)
 - PR description should reference the phase/task being implemented
 - Squash merge preferred for clean history
