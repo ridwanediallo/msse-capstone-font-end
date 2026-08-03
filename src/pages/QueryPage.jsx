@@ -122,9 +122,13 @@ function UserBubble({ turn }) {
   )
 }
 
-function ReportPanel({ turn, isLatest }) {
-  const [showSql, setShowSql] = useState(isLatest)
-  const [showData, setShowData] = useState(false)
+function ReportPanel({ turn }) {
+  const hasData = Boolean(turn.rows && turn.rows.length > 0 && !turn.noQuery)
+  const [view, setView] = useState(() => {
+    if (hasData) return 'data'
+    if (turn.sql) return 'sql'
+    return null
+  })
   const reportRef = useRef(null)
 
   const kpis = deriveKpis(turn)
@@ -213,7 +217,10 @@ function ReportPanel({ turn, isLatest }) {
           <div className="report-toggles">
             {turn.sql && (
               <>
-                <button className="link-toggle" onClick={() => setShowSql(!showSql)}>
+                <button
+                  className={'link-toggle' + (view === 'sql' ? ' active' : '')}
+                  onClick={() => setView('sql')}
+                >
                   <CodeOutlined /> View SQL
                 </button>
                 <Tooltip title="Copy SQL">
@@ -223,9 +230,12 @@ function ReportPanel({ turn, isLatest }) {
                 </Tooltip>
               </>
             )}
-            {turn.rows && turn.rows.length > 0 && !turn.noQuery && (
+            {hasData && (
               <>
-                <button className="link-toggle" onClick={() => setShowData(!showData)}>
+                <button
+                  className={'link-toggle' + (view === 'data' ? ' active' : '')}
+                  onClick={() => setView('data')}
+                >
                   <TableOutlined /> View data
                   <span style={{ color: 'var(--text-faint)', fontWeight: 400 }}>
                     ({turn.rowCount} row{turn.rowCount !== 1 ? 's' : ''}
@@ -246,7 +256,7 @@ function ReportPanel({ turn, isLatest }) {
             )}
           </div>
 
-          {showSql && turn.sql && (
+          {view === 'sql' && turn.sql && (
             <pre className="sql-block">
               <code
                 dangerouslySetInnerHTML={{
@@ -259,7 +269,7 @@ function ReportPanel({ turn, isLatest }) {
             </pre>
           )}
 
-          {showData && turn.rows && turn.rows.length > 0 && (
+          {view === 'data' && hasData && (
             <div className="data-card">
               <Table
                 columns={columns}
@@ -347,7 +357,7 @@ function QueryPage() {
             <div key={turn.id || i}>
               <UserBubble turn={turn} />
               {(turn.summary || turn.sql) && (
-                <ReportPanel turn={turn} isLatest={i === turns.length - 1 && !loading} />
+                <ReportPanel turn={turn} />
               )}
             </div>
           ))}
