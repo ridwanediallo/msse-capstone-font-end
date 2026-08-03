@@ -337,7 +337,7 @@ function QueryPage() {
         <div className="thread-inner">
           {!hasTurns && !loading && (
             <div className="empty-state">
-              <DatabaseOutlined style={{ fontSize: 40, color: '#d4d4d2' }} />
+              <DatabaseOutlined style={{ fontSize: 40, color: 'var(--text-faint)' }} />
               <h2>Ask your data anything</h2>
               <p>e.g. “What were our top 5 products by revenue last quarter?”</p>
             </div>

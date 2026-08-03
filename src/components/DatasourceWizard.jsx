@@ -215,7 +215,7 @@ function DatasourceWizard({ open, onClose }) {
         return (
           <div style={{ textAlign: 'center', padding: '24px 0' }}>
             <DatabaseOutlined
-              style={{ fontSize: 48, color: '#1677ff', marginBottom: 16 }}
+              style={{ fontSize: 48, color: 'var(--accent)', marginBottom: 16 }}
             />
             <Title level={4}>PostgreSQL</Title>
             <Text type="secondary">Connect to any PostgreSQL database</Text>
@@ -356,7 +356,7 @@ function DatasourceWizard({ open, onClose }) {
         ) : (
           <div style={{ textAlign: 'center', padding: '24px 0' }}>
             <DatabaseOutlined
-              style={{ fontSize: 48, color: '#52c41a', marginBottom: 16 }}
+              style={{ fontSize: 48, color: 'var(--teal)', marginBottom: 16 }}
             />
             <Title level={4}>Ready to Save</Title>
             <Text type="secondary">
