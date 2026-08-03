@@ -14,6 +14,7 @@ import * as html2canvas from 'html2canvas'
 import jsPDF from 'jspdf'
 import * as XLSX from 'xlsx'
 import useQueryStore from '../stores/useQueryStore'
+import useDatasourceStore from '../stores/useDatasourceStore'
 import ChartSpec from '../components/ChartSpec'
 
 hljs.registerLanguage('postgresql', postgresql)
@@ -299,14 +300,27 @@ function LoadingPanel() {
 function QueryPage() {
   const {
     turns, loading, error, submitQuery, newConversation, conversationId,
+    suggestions, fetchSuggestions,
   } = useQueryStore()
+
+  const { selectedDatasourceId } = useDatasourceStore()
 
   const [localQuestion, setLocalQuestion] = useState('')
   const threadEndRef = useRef(null)
 
+  const hasTurns = turns.length > 0
+
   useEffect(() => {
     threadEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [turns.length, loading])
+
+  // Load schema-aware starter suggestions whenever an empty session is shown
+  // for a datasource.
+  useEffect(() => {
+    if (!hasTurns && !loading && selectedDatasourceId) {
+      fetchSuggestions(selectedDatasourceId)
+    }
+  }, [hasTurns, loading, selectedDatasourceId, fetchSuggestions])
 
   const handleSubmit = () => {
     const q = localQuestion.trim()
@@ -327,9 +341,8 @@ function QueryPage() {
     if (lastTurn) submitQuery(lastTurn.question)
   }
 
-  const hasTurns = turns.length > 0
   const latestTurn = hasTurns ? turns[turns.length - 1] : null
-  const suggestions = latestTurn && !loading ? parseSuggestions(latestTurn.summary) : []
+  const followUpSuggestions = latestTurn && !loading ? parseSuggestions(latestTurn.summary) : []
 
   return (
     <>
@@ -340,6 +353,22 @@ function QueryPage() {
               <DatabaseOutlined style={{ fontSize: 40, color: 'var(--text-faint)' }} />
               <h2>Ask your data anything</h2>
               <p>e.g. “What were our top 5 products by revenue last quarter?”</p>
+              {suggestions.length > 0 && (
+                <div className="starter-suggestions">
+                  <div className="starter-label">Try one of these:</div>
+                  <div className="suggestion-row">
+                    {suggestions.map((s, i) => (
+                      <button
+                        key={i}
+                        className="suggestion-chip"
+                        onClick={() => submitQuery(s)}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -370,9 +399,9 @@ function QueryPage() {
             />
           )}
 
-          {suggestions.length > 0 && (
+          {followUpSuggestions.length > 0 && (
             <div className="suggestion-row">
-              {suggestions.map((s, i) => (
+              {followUpSuggestions.map((s, i) => (
                 <button
                   key={i}
                   className="suggestion-chip"

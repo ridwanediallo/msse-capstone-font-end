@@ -551,6 +551,28 @@ body {
   cursor: not-allowed;
 }
 
+/* New-session starter suggestions (empty state) */
+.starter-suggestions {
+  margin-top: 26px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.starter-label {
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--text-faint);
+}
+
+.starter-suggestions .suggestion-row {
+  justify-content: center;
+  max-width: 720px;
+}
+
 /* ---------- Composer ---------- */
 .composer {
   flex-shrink: 0;
