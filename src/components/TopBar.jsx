@@ -26,10 +26,12 @@ function TopBar() {
     fetchDatasources()
   }, [fetchDatasources])
 
-  // Default to the first datasource when none is selected yet
+  // Default to the first real datasource; fall back to the sample when it's
+  // the only one available.
   useEffect(() => {
     if (!selectedDatasourceId && datasources.length > 0) {
-      selectDatasource(datasources[0].id)
+      const preferred = datasources.find((d) => !d.is_sample) || datasources[0]
+      selectDatasource(preferred.id)
     }
   }, [datasources, selectedDatasourceId, selectDatasource])
 
@@ -39,7 +41,12 @@ function TopBar() {
   const menuItems = [
     ...datasources.map((d) => ({
       key: d.id,
-      label: d.name,
+      label: (
+        <>
+          {d.name}
+          {d.is_sample && <span className="sample-tag">Sample</span>}
+        </>
+      ),
       icon: <DatabaseOutlined />,
       onClick: () => {
         selectDatasource(d.id)
