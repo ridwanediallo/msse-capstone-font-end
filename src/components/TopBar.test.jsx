@@ -42,7 +42,7 @@ describe('TopBar', () => {
         HttpResponse.json([
           {
             id: 'ds-2',
-            name: 'sample_target',
+            name: 'Customers & Orders',
             db_type: 'postgresql',
             host: 'localhost',
             port: 5432,
@@ -60,7 +60,7 @@ describe('TopBar', () => {
     )
     renderTopBar()
     expect(
-      await screen.findByRole('button', { name: /sample_target/i }),
+      await screen.findByRole('button', { name: /customers & orders/i }),
     ).toBeInTheDocument()
   })
 
@@ -68,7 +68,7 @@ describe('TopBar', () => {
     renderTopBar()
     const pill = await screen.findByRole('button', { name: /school/i })
     expect(pill).toHaveTextContent('school')
-    expect(pill).not.toHaveTextContent('sample_target')
+    expect(pill).not.toHaveTextContent('Customers & Orders')
   })
 
   it('renders a Sample badge in the datasource dropdown', async () => {
@@ -93,7 +93,7 @@ describe('TopBar', () => {
     await screen.findByRole('button', { name: /school/i })
 
     await userEvent.click(screen.getByRole('button', { name: /school/i }))
-    await userEvent.click(await screen.findByText('sample_target'))
+    await userEvent.click(await screen.findByText('Customers & Orders'))
 
     await userEvent.click(screen.getByRole('button', { name: /history/i }))
     expect(

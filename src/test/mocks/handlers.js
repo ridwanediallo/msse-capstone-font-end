@@ -18,7 +18,7 @@ const datasources = [
   },
   {
     id: 'ds-2',
-    name: 'sample_target',
+    name: 'Customers & Orders',
     db_type: 'postgresql',
     host: 'localhost',
     port: 5432,
