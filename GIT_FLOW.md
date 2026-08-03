@@ -1,20 +1,37 @@
 # Git Flow Conventions
 
+> The backend `msse-capstone-backend-/GIT_FLOW.md` is the source of truth; this
+> copy is kept in sync for local reference.
+
 ## Branch Types
 
 | Branch | Purpose | Lifetime |
 |--------|---------|----------|
 | `main` | Stable, production-ready code | Permanent |
 | `dev` | Integration branch — all features merge here first | Permanent |
-| `feat/*` | Feature branches — one per feature/phase | Temporary (delete after merge) |
-| `fix/*` | Bug fix branches | Temporary (delete after merge) |
+| `feat/*` | New features | Temporary (delete after merge) |
+| `fix/*` | Bug fixes | Temporary (delete after merge) |
+| `refactor/*` | Code restructuring with no behavior change | Temporary (delete after merge) |
+| `docs/*` | Documentation only | Temporary (delete after merge) |
+| `test/*` | Adding or fixing tests | Temporary (delete after merge) |
+| `chore/*` | Tooling, dependencies, housekeeping | Temporary (delete after merge) |
+| `style/*` | Formatting / non-functional style changes | Temporary (delete after merge) |
+| `perf/*` | Performance improvements | Temporary (delete after merge) |
+| `revert/*` | Reverting a previous change | Temporary (delete after merge) |
 
 ## Branch Naming
+
+Use `type/description` in lowercase kebab-case (hyphens, not underscores).
+Choose the type by the PR's dominant change; if a PR mixes types, pick the
+most significant one (e.g. a feature that fixes a small bug on the way is `feat/`).
 
 ```
 feat/phase-X-description      # New features (e.g., feat/phase-9-conversation-memory)
 fix/issue-description         # Bug fixes (e.g., fix/sql-formatting-subqueries)
-docs/description              # Documentation only
+refactor/toggle-single-view   # Refactors (e.g., refactor/report-toggle-single-view)
+docs/git-flow-conventions     # Documentation only
+test/query-routes-filter      # Test-only changes
+chore/dependency-update       # Housekeeping
 ```
 
 ## Workflow
@@ -76,15 +93,3 @@ chore: update dependencies
 - PR title should match commit format (e.g., `feat: Phase 9 — Conversation memory`)
 - PR description should reference the phase/task being implemented
 - Squash merge preferred for clean history
-
-## Current State
-
-### Backend (`msse-capstone-backend-`)
-- `main` — stable releases
-- `dev` — integration branch
-- Feature branches: `feat/database_foundation`, `feat/phase-3-walking-skeleton`, etc.
-
-### Frontend (`msse-capstone-font-end`)
-- `main` — stable releases
-- `dev` — integration branch
-- Feature branches: `feat/phase-9-conversation-memory`, etc.
