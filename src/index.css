@@ -456,6 +456,13 @@ body {
   text-decoration: underline;
 }
 
+.link-toggle.active {
+  color: var(--accent-strong);
+  text-decoration: underline;
+  text-decoration-color: var(--accent);
+  text-underline-offset: 3px;
+}
+
 .icon-btn {
   background: none;
   border: none;
