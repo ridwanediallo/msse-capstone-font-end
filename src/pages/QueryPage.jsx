@@ -362,7 +362,6 @@ function QueryPage() {
             <div className="empty-state">
               <DatabaseOutlined style={{ fontSize: 40, color: 'var(--text-faint)' }} />
               <h2>Ask your data anything</h2>
-              <p>e.g. “What were our top 5 products by revenue last quarter?”</p>
               {suggestions.length > 0 && (
                 <div className="starter-suggestions">
                   <div className="starter-label">Try one of these:</div>
