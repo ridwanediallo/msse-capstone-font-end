@@ -1,6 +1,9 @@
 import { useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { PlusOutlined } from '@ant-design/icons'
+import { Dropdown, Avatar } from 'antd'
+import {
+  PlusOutlined, LogoutOutlined, LoginOutlined, DownOutlined,
+} from '@ant-design/icons'
 import useQueryStore from '../stores/useQueryStore'
 import useDatasourceStore from '../stores/useDatasourceStore'
 import useAuthStore from '../stores/useAuthStore'
@@ -17,6 +20,7 @@ function Sidebar() {
   } = useQueryStore()
   const selectedDatasourceId = useDatasourceStore((s) => s.selectedDatasourceId)
   const user = useAuthStore((s) => s.user)
+  const logout = useAuthStore((s) => s.logout)
 
   useEffect(() => {
     fetchConversations()
@@ -35,6 +39,43 @@ function Sidebar() {
   }
 
   const recents = conversations.slice(0, MAX_RECENTS)
+
+  const accountMenuItems = user
+    ? [
+        {
+          key: 'identity',
+          label: (
+            <div style={{ padding: '4px 0' }}>
+              <div style={{ fontWeight: 600 }}>{user.name || user.email}</div>
+              <div style={{ fontSize: 12, color: 'var(--text-faint)' }}>
+                {user.email}
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--text-faint)', textTransform: 'capitalize' }}>
+                {user.role}
+              </div>
+            </div>
+          ),
+          disabled: true,
+        },
+        { type: 'divider' },
+        {
+          key: 'logout',
+          label: 'Sign out',
+          icon: <LogoutOutlined />,
+          onClick: () => {
+            logout()
+            navigate('/')
+          },
+        },
+      ]
+    : [
+        {
+          key: 'login',
+          label: 'Sign in',
+          icon: <LoginOutlined />,
+          onClick: () => navigate('/login'),
+        },
+      ]
 
   return (
     <aside className="sidebar">
@@ -71,19 +112,19 @@ function Sidebar() {
         )}
       </div>
 
-      <div className="sidebar-footer" style={{ justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div className="sidebar-avatar">
-            {user ? initials(user.name, user.email) : 'G'}
+      <Dropdown menu={{ items: accountMenuItems }} trigger={['click']} placement="topRight">
+        <button className="sidebar-footer" title={user ? user.email : 'Guest'}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Avatar size="small" className="sidebar-avatar">
+              {user ? initials(user.name, user.email) : 'G'}
+            </Avatar>
+            <span className="sidebar-username">
+              {user ? user.name || user.email : 'Guest'}
+            </span>
           </div>
-          <span className="sidebar-username">
-            {user ? user.name || user.email : 'Guest'}
-          </span>
-        </div>
-        {user?.role === 'admin' && (
-          <span className="sidebar-role-tag">admin</span>
-        )}
-      </div>
+          <DownOutlined style={{ fontSize: 10, color: 'var(--text-faint)' }} />
+        </button>
+      </Dropdown>
     </aside>
   )
 }

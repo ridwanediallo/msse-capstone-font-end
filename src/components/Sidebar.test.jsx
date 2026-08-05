@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach } from 'vitest'
+import { describe, expect, it, beforeEach, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Outlet, Route, Routes } from 'react-router-dom'
@@ -6,6 +6,7 @@ import { http, HttpResponse } from 'msw'
 import { server } from '../test/mocks/server'
 import useQueryStore from '../stores/useQueryStore'
 import useDatasourceStore from '../stores/useDatasourceStore'
+import useAuthStore from '../stores/useAuthStore'
 import Sidebar from './Sidebar'
 
 const Layout = () => (
@@ -22,6 +23,7 @@ const renderSidebar = (initialEntry = '/') =>
         <Route element={<Layout />}>
           <Route path="/" element={<div>home page</div>} />
           <Route path="/somewhere" element={<div>other page</div>} />
+          <Route path="/login" element={<div>login page</div>} />
         </Route>
       </Routes>
     </MemoryRouter>,
@@ -77,5 +79,45 @@ describe('Sidebar', () => {
     expect(
       screen.queryByText('How many students are in each major?'),
     ).toBeNull()
+  })
+
+  it('shows the account menu with identity and signs out', async () => {
+    const logoutSpy = vi.fn(async () => {})
+    useAuthStore.setState({
+      user: {
+        id: 'u-admin',
+        email: 'admin@queryable.local',
+        name: 'Admin',
+        role: 'admin',
+      },
+      isAuthenticated: true,
+      guestQuota: null,
+    })
+    useAuthStore.setState({ logout: logoutSpy })
+    renderSidebar('/somewhere')
+
+    await userEvent.click(await screen.findByRole('button', { name: /admin/i }))
+    expect(await screen.findByText('Sign out')).toBeInTheDocument()
+    expect(screen.getByText('admin@queryable.local')).toBeInTheDocument()
+    expect(screen.getByText('admin')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByText('Sign out'))
+    expect(logoutSpy).toHaveBeenCalled()
+    expect(await screen.findByText('home page')).toBeInTheDocument()
+  })
+
+  it('shows the account menu and signs a guest in from it', async () => {
+    useAuthStore.setState({
+      user: null,
+      isAuthenticated: false,
+      guestQuota: null,
+    })
+    renderSidebar()
+
+    await userEvent.click(await screen.findByRole('button', { name: /guest/i }))
+    expect(await screen.findByText('Sign in')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByText('Sign in'))
+    expect(await screen.findByText('login page')).toBeInTheDocument()
   })
 })

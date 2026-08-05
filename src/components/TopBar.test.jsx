@@ -110,13 +110,6 @@ describe('TopBar', () => {
     expect(screen.queryByText('How many students are in each major?')).toBeNull()
   })
 
-  it('shows the user menu with a sign-out action', async () => {
-    renderTopBar()
-    await userEvent.click(screen.getByRole('button', { name: /admin/i }))
-    expect(await screen.findByText('Sign out')).toBeInTheDocument()
-    expect(screen.getByText('admin')).toBeInTheDocument()
-  })
-
   it('shows "Manage data sources" only to admins', async () => {
     renderTopBar()
     await userEvent.click(await screen.findByRole('button', { name: /school/i }))
@@ -135,16 +128,5 @@ describe('TopBar', () => {
     await screen.findByText('Customers & Orders')
     expect(screen.queryByText('Manage data sources')).toBeNull()
     expect(screen.queryByTitle('Data sources')).toBeNull()
-  })
-
-  it('shows a Sign in action for guests', async () => {
-    useAuthStore.setState({
-      user: null,
-      isAuthenticated: false,
-      guestQuota: null,
-    })
-    renderTopBar()
-    await userEvent.click(screen.getByRole('button', { name: /guest/i }))
-    expect(await screen.findByText('Sign in')).toBeInTheDocument()
   })
 })

@@ -1,14 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, Dropdown, Drawer, List, Popconfirm, Typography, Empty, Avatar } from 'antd'
+import { Button, Dropdown, Drawer, List, Popconfirm, Typography, Empty } from 'antd'
 import {
   DatabaseOutlined, HistoryOutlined, SettingOutlined,
-  DeleteOutlined, DownOutlined, UserOutlined, LogoutOutlined, LoginOutlined,
+  DeleteOutlined, DownOutlined,
 } from '@ant-design/icons'
 import useDatasourceStore from '../stores/useDatasourceStore'
 import useQueryStore from '../stores/useQueryStore'
 import useAuthStore from '../stores/useAuthStore'
-import { initials } from '../initials'
 
 const { Text } = Typography
 
@@ -24,7 +23,6 @@ function TopBar() {
     newConversation,
   } = useQueryStore()
   const user = useAuthStore((s) => s.user)
-  const logout = useAuthStore((s) => s.logout)
   const isAdmin = user?.role === 'admin'
 
   useEffect(() => {
@@ -72,40 +70,6 @@ function TopBar() {
       : []),
   ]
 
-  const userMenuItems = user
-    ? [
-        {
-          key: 'identity',
-          label: (
-            <div style={{ padding: '4px 0' }}>
-              <div style={{ fontWeight: 600 }}>{user.name || user.email}</div>
-              <div style={{ fontSize: 12, color: 'var(--text-faint)', textTransform: 'capitalize' }}>
-                {user.role}
-              </div>
-            </div>
-          ),
-          disabled: true,
-        },
-        { type: 'divider' },
-        {
-          key: 'logout',
-          label: 'Sign out',
-          icon: <LogoutOutlined />,
-          onClick: () => {
-            logout()
-            navigate('/')
-          },
-        },
-      ]
-    : [
-        {
-          key: 'login',
-          label: 'Sign in',
-          icon: <LoginOutlined />,
-          onClick: () => navigate('/login'),
-        },
-      ]
-
   const openHistory = () => {
     fetchConversations()
     setHistoryOpen(true)
@@ -132,17 +96,6 @@ function TopBar() {
             title="Data sources"
           />
         )}
-        <Dropdown menu={{ items: userMenuItems }} trigger={['click']} placement="bottomRight">
-          <button className="user-menu-btn" title={user ? user.email : 'Guest'}>
-            <Avatar size="small" icon={<UserOutlined />} className="user-menu-avatar">
-              {user ? initials(user.name, user.email) : null}
-            </Avatar>
-            <span className="user-menu-label">
-              {user ? user.name || user.email : 'Guest'}
-            </span>
-            <DownOutlined style={{ fontSize: 10, color: 'var(--text-faint)' }} />
-          </button>
-        </Dropdown>
       </div>
 
       <Drawer
