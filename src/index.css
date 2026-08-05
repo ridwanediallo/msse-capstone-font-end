@@ -687,3 +687,113 @@ body {
   padding: 8px 24px 24px;
   overflow-y: auto;
 }
+
+/* ---------- Auth ---------- */
+.app-loading {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--app-bg);
+}
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--app-bg);
+  padding: 24px;
+}
+
+.login-card {
+  width: 380px;
+  background: var(--card-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-md);
+  padding: 32px;
+}
+
+.login-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.login-brand-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--accent-soft), var(--teal-soft));
+  border: 1px solid var(--sidebar-border);
+  color: var(--accent-strong);
+  font-size: 16px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ---------- User menu (top bar) ---------- */
+.user-menu-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px 4px 4px;
+  border: 1px solid var(--panel-border);
+  border-radius: var(--r-sm);
+  background: var(--card-bg);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: var(--shadow-xs);
+}
+
+.user-menu-avatar.ant-avatar {
+  background: linear-gradient(135deg, var(--accent-soft), var(--teal-soft));
+  color: var(--accent-strong);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.user-menu-label {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-role-tag {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-ring);
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+/* ---------- Guest quota ---------- */
+.guest-quota-banner {
+  max-width: 1000px;
+  margin: 0 auto 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-muted);
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--r-sm);
+  padding: 6px 12px;
+}
+
+.guest-quota-banner.exhausted {
+  border-color: var(--danger);
+  background: #fef2f2;
+  color: var(--text);
+}

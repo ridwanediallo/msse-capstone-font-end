@@ -6,6 +6,7 @@ import { http, HttpResponse } from 'msw'
 import { server } from '../test/mocks/server'
 import TopBar from './TopBar'
 import useDatasourceStore from '../stores/useDatasourceStore'
+import useAuthStore from '../stores/useAuthStore'
 
 const renderTopBar = () =>
   render(
@@ -20,6 +21,13 @@ describe('TopBar', () => {
       datasources: [],
       selectedDatasourceId: null,
       currentDatasource: null,
+    })
+    useAuthStore.setState({
+      user: { id: 'u-admin', email: 'admin@queryable.local', name: 'Admin', role: 'admin' },
+      isAuthenticated: true,
+      guestQuota: null,
+      loading: false,
+      error: null,
     })
   })
 
@@ -100,5 +108,43 @@ describe('TopBar', () => {
       await screen.findByText('Top products by region'),
     ).toBeInTheDocument()
     expect(screen.queryByText('How many students are in each major?')).toBeNull()
+  })
+
+  it('shows the user menu with a sign-out action', async () => {
+    renderTopBar()
+    await userEvent.click(screen.getByRole('button', { name: /admin/i }))
+    expect(await screen.findByText('Sign out')).toBeInTheDocument()
+    expect(screen.getByText('admin')).toBeInTheDocument()
+  })
+
+  it('shows "Manage data sources" only to admins', async () => {
+    renderTopBar()
+    await userEvent.click(await screen.findByRole('button', { name: /school/i }))
+    expect(
+      await screen.findByText('Manage data sources'),
+    ).toBeInTheDocument()
+  })
+
+  it('hides "Manage data sources" from members and hides the datasource button', async () => {
+    useAuthStore.setState({
+      user: { id: 'u-member', email: 'm@x.io', name: 'Member', role: 'member' },
+      isAuthenticated: true,
+    })
+    renderTopBar()
+    await userEvent.click(await screen.findByRole('button', { name: /school/i }))
+    await screen.findByText('Customers & Orders')
+    expect(screen.queryByText('Manage data sources')).toBeNull()
+    expect(screen.queryByTitle('Data sources')).toBeNull()
+  })
+
+  it('shows a Sign in action for guests', async () => {
+    useAuthStore.setState({
+      user: null,
+      isAuthenticated: false,
+      guestQuota: null,
+    })
+    renderTopBar()
+    await userEvent.click(screen.getByRole('button', { name: /guest/i }))
+    expect(await screen.findByText('Sign in')).toBeInTheDocument()
   })
 })

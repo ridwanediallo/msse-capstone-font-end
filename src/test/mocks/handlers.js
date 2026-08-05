@@ -1,5 +1,25 @@
 import { http, HttpResponse } from 'msw'
 
+const adminUser = {
+  id: 'u-admin',
+  email: 'admin@queryable.local',
+  name: 'Admin',
+  role: 'admin',
+  is_active: true,
+  created_at: '2026-07-01T00:00:00Z',
+  last_login_at: '2026-08-01T00:00:00Z',
+}
+
+const memberUser = {
+  id: 'u-member',
+  email: 'member@queryable.local',
+  name: 'Member',
+  role: 'member',
+  is_active: true,
+  created_at: '2026-07-01T00:00:00Z',
+  last_login_at: null,
+}
+
 const datasources = [
   {
     id: 'ds-1',
@@ -112,9 +132,31 @@ const queryResponse = (question) => ({
   question_resolved: null,
   conversation_id: 'conv-1',
   turn_id: 'turn-99',
+  guest_quota: { limit: 5, used: 1, remaining: 4 },
 })
 
 export const handlers = [
+  http.get('/api/v1/auth/me', () =>
+    HttpResponse.json({ is_authenticated: true, user: adminUser }),
+  ),
+  http.post('/api/v1/auth/login', async ({ request }) => {
+    const body = await request.json()
+    if (!body.email || !body.password) {
+      return HttpResponse.json(
+        { error: 'Email and password are required', code: 'missing_credentials' },
+        { status: 400 },
+      )
+    }
+    if (body.password === 'wrong') {
+      return HttpResponse.json(
+        { error: 'Invalid email or password', code: 'invalid_credentials' },
+        { status: 401 },
+      )
+    }
+    return HttpResponse.json({ user: memberUser })
+  }),
+  http.post('/api/v1/auth/logout', () => HttpResponse.json({ ok: true })),
+
   http.get('/api/v1/datasources', () => HttpResponse.json(datasources)),
   http.post('/api/v1/datasources', () =>
     HttpResponse.json(
