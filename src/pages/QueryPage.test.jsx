@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { http, HttpResponse } from 'msw'
@@ -154,6 +154,40 @@ describe('QueryPage guest quota', () => {
     expect(
       screen.getByRole('button', { name: /sign in to keep querying/i }),
     ).toBeInTheDocument()
+  })
+
+  it('locks the composer when the server rejects with query_quota_exceeded', async () => {
+    server.use(
+      http.post('/api/v1/query', () =>
+        HttpResponse.json(
+          {
+            error: 'Guest query limit reached. Sign in to keep querying.',
+            code: 'query_quota_exceeded',
+            details: { limit: 5, remaining: 0 },
+          },
+          { status: 429 },
+        ),
+      ),
+    )
+    renderPage()
+
+    const input = screen.getByPlaceholderText('Ask a question about your data')
+    await userEvent.type(input, 'one too many?')
+    await userEvent.click(screen.getByTitle('Send'))
+
+    await waitFor(() => {
+      expect(useAuthStore.getState().guestQuota).toEqual({
+        limit: 5,
+        used: 5,
+        remaining: 0,
+      })
+    })
+    expect(
+      await screen.findByText('Guest query limit reached.'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByPlaceholderText('Guest limit reached — sign in to keep querying'),
+    ).toBeDisabled()
   })
 
   it('does not show a quota banner to signed-in users', async () => {

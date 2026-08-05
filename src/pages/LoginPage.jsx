@@ -9,15 +9,18 @@ const { Title, Text } = Typography
 function LoginPage() {
   const navigate = useNavigate()
   const login = useAuthStore((s) => s.login)
-  const error = useAuthStore((s) => s.error)
+  const [formError, setFormError] = useState(null)
   const [submitting, setSubmitting] = useState(false)
 
   const handleFinish = async ({ email, password }) => {
     setSubmitting(true)
+    setFormError(null)
     const result = await login(email, password)
     setSubmitting(false)
     if (result.ok) {
       navigate('/')
+    } else {
+      setFormError(result.error)
     }
   }
 
@@ -32,10 +35,10 @@ function LoginPage() {
           Sign in to query your data sources
         </Text>
 
-        {error && (
+        {formError && (
           <Alert
             type="error"
-            message={error}
+            message={formError}
             showIcon
             style={{ marginBottom: 16, borderRadius: 10 }}
             closable

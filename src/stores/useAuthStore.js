@@ -44,6 +44,7 @@ const useAuthStore = create((set, get) => ({
       set({
         user: data.user || null,
         isAuthenticated: Boolean(data.user),
+        guestQuota: null,
         loading: false,
       })
       return { ok: true }

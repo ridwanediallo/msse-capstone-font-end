@@ -34,6 +34,15 @@ const useQueryStore = create((set, get) => ({
       })
       const data = await res.json()
       if (!res.ok) {
+        if (data.code === 'query_quota_exceeded') {
+          const d = data.details || {}
+          const limit = d.limit ?? 5
+          useAuthStore.getState().setGuestQuota({
+            limit,
+            used: limit,
+            remaining: d.remaining ?? 0,
+          })
+        }
         throw new Error(data.error || `HTTP ${res.status}`)
       }
 

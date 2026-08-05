@@ -125,7 +125,7 @@ describe('TopBar', () => {
     ).toBeInTheDocument()
   })
 
-  it('hides "Manage data sources" from members and shows the datasource button', async () => {
+  it('hides "Manage data sources" from members and hides the datasource button', async () => {
     useAuthStore.setState({
       user: { id: 'u-member', email: 'm@x.io', name: 'Member', role: 'member' },
       isAuthenticated: true,
