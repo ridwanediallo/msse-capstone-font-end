@@ -223,6 +223,103 @@ body {
   color: var(--text-muted);
 }
 
+.sidebar-footer {
+  cursor: pointer;
+  background: none;
+  border: none;
+  border-top: 1px solid var(--sidebar-border);
+  padding: 14px 0 0;
+  font: inherit;
+  text-align: left;
+  width: 100%;
+  transition: opacity 0.15s ease;
+}
+
+.sidebar-footer:hover {
+  opacity: 0.85;
+}
+
+.account-popover {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.account-pop {
+  min-width: 240px;
+}
+
+.account-pop-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 4px 12px;
+}
+
+.account-pop-avatar.ant-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-soft), var(--teal-soft));
+  border: 1px solid var(--panel-border);
+  color: var(--accent-strong);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.account-pop-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.account-pop-name {
+  font-weight: 600;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-pop-sub {
+  font-size: 12.5px;
+  color: var(--text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-pop-role {
+  font-size: 11px;
+  text-transform: capitalize;
+  color: var(--text-faint);
+}
+
+.account-pop-actions {
+  border-top: 1px solid var(--panel-border);
+  padding-top: 8px;
+}
+
+.account-pop-action {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 6px;
+  border: none;
+  border-radius: var(--r-sm);
+  background: none;
+  font-size: 13.5px;
+  color: var(--text-strong);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease;
+}
+
+.account-pop-action:hover {
+  background: var(--hover-bg);
+}
+
 /* ---------- Top bar ---------- */
 .topbar {
   display: flex;

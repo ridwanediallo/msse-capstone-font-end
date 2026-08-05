@@ -1,5 +1,7 @@
 import { create } from 'zustand'
-import { apiFetch } from '../api.js'
+import { apiFetch, readJson } from '../api.js'
+
+const UNREACHABLE = 'Cannot reach the server. Make sure the backend is running.'
 
 const useAuthStore = create((set, get) => ({
   user: null,
@@ -11,8 +13,8 @@ const useAuthStore = create((set, get) => ({
   fetchMe: async () => {
     try {
       const res = await apiFetch('/auth/me')
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`)
+      const data = await readJson(res)
+      if (!res.ok || data === null) throw new Error(data?.error || `HTTP ${res.status}`)
       set({
         user: data.user || null,
         isAuthenticated: Boolean(data.is_authenticated),
@@ -35,12 +37,18 @@ const useAuthStore = create((set, get) => ({
   login: async (email, password) => {
     set({ error: null })
     try {
-      const res = await apiFetch('/auth/login', {
-        method: 'POST',
-        body: JSON.stringify({ email, password }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`)
+      let res
+      try {
+        res = await apiFetch('/auth/login', {
+          method: 'POST',
+          body: JSON.stringify({ email, password }),
+        })
+      } catch {
+        set({ error: UNREACHABLE })
+        return { ok: false, error: UNREACHABLE }
+      }
+      const data = await readJson(res)
+      if (!res.ok || data === null) throw new Error(data?.error || `HTTP ${res.status}`)
       set({
         user: data.user || null,
         isAuthenticated: Boolean(data.user),

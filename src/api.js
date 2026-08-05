@@ -14,3 +14,13 @@ export const apiFetch = (path, options = {}) => {
     headers,
   })
 }
+
+export const readJson = async (res) => {
+  const text = await res.text()
+  if (!text) return null
+  try {
+    return JSON.parse(text)
+  } catch {
+    return null
+  }
+}

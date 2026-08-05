@@ -70,6 +70,31 @@ describe('useAuthStore', () => {
       expect(state.error).toBe('Invalid email or password')
       expect(state.user).toBeNull()
     })
+
+    it('reports a clear error when the server returns a non-JSON empty body', async () => {
+      server.use(
+        http.post('/api/v1/auth/login', () =>
+          new HttpResponse('', { status: 502 }),
+        ),
+      )
+      const result = await useAuthStore.getState().login('member@queryable.local', 'pw')
+      expect(result.ok).toBe(false)
+      expect(result.error).toBe('HTTP 502')
+      expect(useAuthStore.getState().error).toBe('HTTP 502')
+      expect(useAuthStore.getState().user).toBeNull()
+    })
+
+    it('reports a clear error when the server is unreachable', async () => {
+      server.use(
+        http.post('/api/v1/auth/login', () =>
+          HttpResponse.error(),
+        ),
+      )
+      const result = await useAuthStore.getState().login('member@queryable.local', 'pw')
+      expect(result.ok).toBe(false)
+      expect(result.error).toBe('Cannot reach the server. Make sure the backend is running.')
+      expect(useAuthStore.getState().user).toBeNull()
+    })
   })
 
   describe('logout', () => {
