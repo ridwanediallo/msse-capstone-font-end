@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { PlusOutlined } from '@ant-design/icons'
 import useQueryStore from '../stores/useQueryStore'
 import useDatasourceStore from '../stores/useDatasourceStore'
+import useAuthStore from '../stores/useAuthStore'
 
 const MAX_RECENTS = 10
 
@@ -14,6 +15,7 @@ function Sidebar() {
     newConversation, conversationId, loading,
   } = useQueryStore()
   const selectedDatasourceId = useDatasourceStore((s) => s.selectedDatasourceId)
+  const user = useAuthStore((s) => s.user)
 
   useEffect(() => {
     fetchConversations()
@@ -68,9 +70,25 @@ function Sidebar() {
         )}
       </div>
 
-      <div className="sidebar-footer">
-        <div className="sidebar-avatar">RS</div>
-        <span className="sidebar-username">Rid</span>
+      <div className="sidebar-footer" style={{ justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div className="sidebar-avatar">
+            {user
+              ? (user.name || user.email || '?')
+                  .split(/[\s@]+/)
+                  .filter(Boolean)
+                  .slice(0, 2)
+                  .map((part) => part[0].toUpperCase())
+                  .join('')
+              : 'G'}
+          </div>
+          <span className="sidebar-username">
+            {user ? user.name || user.email : 'Guest'}
+          </span>
+        </div>
+        {user?.role === 'admin' && (
+          <span className="sidebar-role-tag">admin</span>
+        )}
       </div>
     </aside>
   )

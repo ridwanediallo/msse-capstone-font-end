@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from 'react'
-import { Table, Button, Alert, Tooltip, message } from 'antd'
+import { useNavigate } from 'react-router-dom'
+import { Table, Button, Alert, Tooltip, message, Tag } from 'antd'
 import {
   CheckSquareOutlined, LoadingOutlined, BorderOutlined,
   CodeOutlined, CopyOutlined, TableOutlined,
   FilePdfOutlined, FileExcelOutlined, ArrowRightOutlined,
-  ReloadOutlined, DatabaseOutlined,
+  ReloadOutlined, DatabaseOutlined, LoginOutlined,
 } from '@ant-design/icons'
 import { format } from 'sql-formatter'
 import hljs from 'highlight.js/lib/core'
@@ -15,6 +16,7 @@ import jsPDF from 'jspdf'
 import * as XLSX from 'xlsx'
 import useQueryStore from '../stores/useQueryStore'
 import useDatasourceStore from '../stores/useDatasourceStore'
+import useAuthStore from '../stores/useAuthStore'
 import ChartSpec from '../components/ChartSpec'
 
 hljs.registerLanguage('postgresql', postgresql)
@@ -307,6 +309,30 @@ function LoadingPanel() {
   )
 }
 
+function GuestQuotaBanner({ quota }) {
+  const navigate = useNavigate()
+  if (!quota) return null
+  const { limit, used, remaining } = quota
+  const exhausted = remaining <= 0
+  return (
+    <div className={'guest-quota-banner' + (exhausted ? ' exhausted' : '')}>
+      <Tag color={exhausted ? 'red' : 'default'} style={{ marginRight: 8 }}>
+        Guest {used}/{limit}
+      </Tag>
+      <span>
+        {exhausted
+          ? 'Guest query limit reached.'
+          : `${remaining} guest quer${remaining === 1 ? 'y' : 'ies'} remaining this session.`}
+      </span>
+      {exhausted && (
+        <Button type="link" size="small" icon={<LoginOutlined />} onClick={() => navigate('/login')}>
+          Sign in to keep querying
+        </Button>
+      )}
+    </div>
+  )
+}
+
 function QueryPage() {
   const {
     turns, loading, error, submitQuery, newConversation, conversationId,
@@ -314,11 +340,15 @@ function QueryPage() {
   } = useQueryStore()
 
   const { selectedDatasourceId } = useDatasourceStore()
+  const user = useAuthStore((s) => s.user)
+  const guestQuota = useAuthStore((s) => s.guestQuota)
 
   const [localQuestion, setLocalQuestion] = useState('')
   const threadEndRef = useRef(null)
 
   const hasTurns = turns.length > 0
+  const isGuest = !user
+  const quotaExhausted = isGuest && guestQuota && guestQuota.remaining <= 0
 
   useEffect(() => {
     threadEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -429,22 +459,27 @@ function QueryPage() {
       </div>
 
       <div className="composer">
+        <GuestQuotaBanner quota={isGuest ? guestQuota : null} />
         <div className="composer-inner">
           <textarea
             className="composer-input"
             rows={1}
             placeholder={
-              conversationId ? 'Ask a follow-up question' : 'Ask a question about your data'
+              quotaExhausted
+                ? 'Guest limit reached — sign in to keep querying'
+                : conversationId
+                  ? 'Ask a follow-up question'
+                  : 'Ask a question about your data'
             }
             value={localQuestion}
             onChange={(e) => setLocalQuestion(e.target.value)}
             onKeyDown={handleKeyDown}
-            disabled={loading}
+            disabled={loading || quotaExhausted}
           />
           <button
             className="composer-send"
             onClick={handleSubmit}
-            disabled={!localQuestion.trim() || loading}
+            disabled={!localQuestion.trim() || loading || quotaExhausted}
             title="Send"
           >
             <ArrowRightOutlined />

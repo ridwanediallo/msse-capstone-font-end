@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { apiUrl } from '../api.js'
+import { apiFetch } from '../api.js'
 
 const useDatasourceStore = create((set, get) => ({
   datasources: [],
@@ -11,7 +11,7 @@ const useDatasourceStore = create((set, get) => ({
   fetchDatasources: async () => {
     set({ loading: true, error: null })
     try {
-      const res = await fetch(apiUrl('/datasources'))
+      const res = await apiFetch('/datasources')
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`)
       set({ datasources: data, loading: false })
@@ -25,7 +25,7 @@ const useDatasourceStore = create((set, get) => ({
   fetchDatasource: async (id) => {
     set({ loading: true, error: null })
     try {
-      const res = await fetch(apiUrl(`/datasources/${id}`))
+      const res = await apiFetch(`/datasources/${id}`)
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`)
       set({ currentDatasource: data, loading: false })
@@ -38,9 +38,8 @@ const useDatasourceStore = create((set, get) => ({
 
   testConnection: async (credentials) => {
     try {
-      const res = await fetch(apiUrl('/datasources/test-connection'), {
+      const res = await apiFetch('/datasources/test-connection', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(credentials),
       })
       const data = await res.json()
@@ -52,9 +51,8 @@ const useDatasourceStore = create((set, get) => ({
 
   createDatasource: async (payload) => {
     try {
-      const res = await fetch(apiUrl('/datasources'), {
+      const res = await apiFetch('/datasources', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
       const data = await res.json()
@@ -68,7 +66,7 @@ const useDatasourceStore = create((set, get) => ({
 
   introspectSchema: async (id) => {
     try {
-      const res = await fetch(apiUrl(`/datasources/${id}/introspect`), {
+      const res = await apiFetch(`/datasources/${id}/introspect`, {
         method: 'POST',
       })
       const data = await res.json()
@@ -81,9 +79,8 @@ const useDatasourceStore = create((set, get) => ({
 
   updateSchemaEntry: async (dsId, catalogId, payload) => {
     try {
-      const res = await fetch(apiUrl(`/datasources/${dsId}/schema/${catalogId}`), {
+      const res = await apiFetch(`/datasources/${dsId}/schema/${catalogId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
       const data = await res.json()
@@ -96,7 +93,7 @@ const useDatasourceStore = create((set, get) => ({
 
   deleteDatasource: async (id) => {
     try {
-      const res = await fetch(apiUrl(`/datasources/${id}`), {
+      const res = await apiFetch(`/datasources/${id}`, {
         method: 'DELETE',
       })
       if (!res.ok) {

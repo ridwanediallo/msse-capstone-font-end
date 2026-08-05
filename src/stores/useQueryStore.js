@@ -1,6 +1,7 @@
 import { create } from 'zustand'
-import { apiUrl } from '../api.js'
+import { apiFetch } from '../api.js'
 import useDatasourceStore from './useDatasourceStore'
+import useAuthStore from './useAuthStore'
 
 const useQueryStore = create((set, get) => ({
   loading: false,
@@ -27,14 +28,17 @@ const useQueryStore = create((set, get) => ({
       if (!conversationId && selectedDatasourceId) {
         body.data_source_id = selectedDatasourceId
       }
-      const res = await fetch(apiUrl('/query'), {
+      const res = await apiFetch('/query', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       })
       const data = await res.json()
       if (!res.ok) {
         throw new Error(data.error || `HTTP ${res.status}`)
+      }
+
+      if (data.guest_quota) {
+        useAuthStore.getState().setGuestQuota(data.guest_quota)
       }
 
       const newTurn = {
@@ -74,8 +78,8 @@ const useQueryStore = create((set, get) => ({
     }
     set({ conversationsLoading: true })
     try {
-      const res = await fetch(
-        apiUrl(`/conversations?data_source_id=${encodeURIComponent(selectedDatasourceId)}`)
+      const res = await apiFetch(
+        `/conversations?data_source_id=${encodeURIComponent(selectedDatasourceId)}`
       )
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`)
@@ -88,7 +92,7 @@ const useQueryStore = create((set, get) => ({
   loadConversation: async (id) => {
     set({ loading: true, error: null })
     try {
-      const res = await fetch(apiUrl(`/conversations/${id}`))
+      const res = await apiFetch(`/conversations/${id}`)
       const data = await res.json()
       if (!res.ok) {
         throw new Error(data.error || `HTTP ${res.status}`)
@@ -124,7 +128,7 @@ const useQueryStore = create((set, get) => ({
 
   deleteConversation: async (id) => {
     try {
-      const res = await fetch(apiUrl(`/conversations/${id}`), { method: 'DELETE' })
+      const res = await apiFetch(`/conversations/${id}`, { method: 'DELETE' })
       if (!res.ok) {
         const data = await res.json()
         throw new Error(data.error || `HTTP ${res.status}`)
@@ -156,7 +160,7 @@ const useQueryStore = create((set, get) => ({
     }
     set({ suggestionsLoading: true })
     try {
-      const res = await fetch(apiUrl(`/datasources/${dsId}/suggestions`))
+      const res = await apiFetch(`/datasources/${dsId}/suggestions`)
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`)
       set({ suggestions: data.suggestions || [], suggestionsLoading: false })
