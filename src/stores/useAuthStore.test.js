@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { server } from '../test/mocks/server'
 import useAuthStore from './useAuthStore'
+import useQueryStore from './useQueryStore'
+import useDatasourceStore from './useDatasourceStore'
 
 const resetStore = () => {
   useAuthStore.setState({
@@ -63,6 +65,28 @@ describe('useAuthStore', () => {
       expect(state.error).toBeNull()
     })
 
+    it('resets query and datasource session state on success', async () => {
+      useQueryStore.setState({ conversationId: 'conv-1', turns: [{ id: 'x' }], conversations: [{ id: 'conv-1' }] })
+      useDatasourceStore.setState({ selectedDatasourceId: 'ds-2', currentDatasource: { id: 'ds-2' } })
+
+      await useAuthStore.getState().login('member@queryable.local', 'pw')
+
+      const q = useQueryStore.getState()
+      expect(q.conversationId).toBeNull()
+      expect(q.turns).toHaveLength(0)
+      expect(q.conversations).toHaveLength(0)
+      const ds = useDatasourceStore.getState()
+      expect(ds.selectedDatasourceId).toBeNull()
+      expect(ds.currentDatasource).toBeNull()
+    })
+
+    it('does not reset session state on failure', async () => {
+      useQueryStore.setState({ conversationId: 'conv-1', turns: [{ id: 'x' }] })
+      const result = await useAuthStore.getState().login('member@queryable.local', 'wrong')
+      expect(result.ok).toBe(false)
+      expect(useQueryStore.getState().conversationId).toBe('conv-1')
+    })
+
     it('records the error on failure', async () => {
       const result = await useAuthStore.getState().login('member@queryable.local', 'wrong')
       expect(result.ok).toBe(false)
@@ -109,6 +133,19 @@ describe('useAuthStore', () => {
       expect(state.user).toBeNull()
       expect(state.isAuthenticated).toBe(false)
       expect(state.guestQuota).toBeNull()
+    })
+
+    it('resets query and datasource session state', async () => {
+      useQueryStore.setState({ conversationId: 'conv-1', turns: [{ id: 'x' }], conversations: [{ id: 'conv-1' }] })
+      useDatasourceStore.setState({ selectedDatasourceId: 'ds-2' })
+
+      await useAuthStore.getState().logout()
+
+      const q = useQueryStore.getState()
+      expect(q.conversationId).toBeNull()
+      expect(q.turns).toHaveLength(0)
+      expect(q.conversations).toHaveLength(0)
+      expect(useDatasourceStore.getState().selectedDatasourceId).toBeNull()
     })
   })
 

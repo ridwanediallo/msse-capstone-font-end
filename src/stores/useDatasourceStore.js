@@ -22,6 +22,12 @@ const useDatasourceStore = create((set, get) => ({
 
   selectDatasource: (id) => set({ selectedDatasourceId: id }),
 
+  reset: () =>
+    set({
+      selectedDatasourceId: null,
+      currentDatasource: null,
+    }),
+
   fetchDatasource: async (id) => {
     set({ loading: true, error: null })
     try {

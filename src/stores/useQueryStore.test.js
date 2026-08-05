@@ -165,6 +165,26 @@ describe('useQueryStore', () => {
 
       expect(useDatasourceStore.getState().selectedDatasourceId).toBe('ds-1')
     })
+
+    it('clears the thread and sets the error when loading fails', async () => {
+      server.use(
+        http.get('/api/v1/conversations/:id', () =>
+          HttpResponse.json(
+            { error: 'Conversation not found', code: 'conversation_not_found' },
+            { status: 404 },
+          ),
+        ),
+      )
+      useQueryStore.setState({ conversationId: 'conv-1', turns: [{ id: 'x' }] })
+
+      await useQueryStore.getState().loadConversation('conv-1')
+
+      const state = useQueryStore.getState()
+      expect(state.error).toBe('Conversation not found')
+      expect(state.loading).toBe(false)
+      expect(state.conversationId).toBeNull()
+      expect(state.turns).toHaveLength(0)
+    })
   })
 
   describe('deleteConversation', () => {

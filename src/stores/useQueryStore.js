@@ -131,7 +131,12 @@ const useQueryStore = create((set, get) => ({
         loading: false,
       })
     } catch (err) {
-      set({ error: err.message, loading: false })
+      set({
+        error: err.message,
+        loading: false,
+        conversationId: null,
+        turns: [],
+      })
     }
   },
 
@@ -160,6 +165,18 @@ const useQueryStore = create((set, get) => ({
       turns: [],
       suggestions: [],
       error: null,
+    }),
+
+  reset: () =>
+    set({
+      loading: false,
+      error: null,
+      conversationId: null,
+      turns: [],
+      suggestions: [],
+      suggestionsLoading: false,
+      conversations: [],
+      conversationsLoading: false,
     }),
 
   fetchSuggestions: async (dsId) => {
