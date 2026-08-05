@@ -55,14 +55,14 @@ describe('QueryPage new-session suggestions', () => {
     ).toBeInTheDocument()
   })
 
-  it('falls back to the static hint when there are no suggestions', async () => {
+  it('shows the empty state without suggestions', async () => {
     server.use(
       http.get('/api/v1/datasources/ds-1/suggestions', () =>
         HttpResponse.json({ suggestions: [] }),
       ),
     )
     renderPage()
-    expect(screen.getByText(/top 5 products by revenue/i)).toBeInTheDocument()
+    expect(screen.getByText(/Ask your data anything/i)).toBeInTheDocument()
     await new Promise((r) => setTimeout(r, 0))
     expect(screen.queryByText('Try one of these:')).toBeNull()
   })
