@@ -4,10 +4,12 @@ import { Button, Dropdown, Drawer, List, Popconfirm, Typography, Empty, Avatar }
 import {
   DatabaseOutlined, HistoryOutlined, SettingOutlined,
   DeleteOutlined, DownOutlined, UserOutlined, LogoutOutlined, LoginOutlined,
+  SunOutlined, MoonOutlined,
 } from '@ant-design/icons'
 import useDatasourceStore from '../stores/useDatasourceStore'
 import useQueryStore from '../stores/useQueryStore'
 import useAuthStore from '../stores/useAuthStore'
+import useThemeStore from '../stores/useThemeStore'
 import { initials } from '../initials'
 
 const { Text } = Typography
@@ -26,6 +28,8 @@ function TopBar() {
   const user = useAuthStore((s) => s.user)
   const logout = useAuthStore((s) => s.logout)
   const isAdmin = user?.role === 'admin'
+  const theme = useThemeStore((s) => s.theme)
+  const toggleTheme = useThemeStore((s) => s.toggleTheme)
 
   useEffect(() => {
     fetchDatasources()
@@ -132,6 +136,12 @@ function TopBar() {
             title="Data sources"
           />
         )}
+        <Button
+          icon={theme === 'dark' ? <SunOutlined /> : <MoonOutlined />}
+          onClick={toggleTheme}
+          title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          aria-label="Toggle dark mode"
+        />
         <Dropdown menu={{ items: userMenuItems }} trigger={['click']} placement="bottomRight">
           <button className="user-menu-btn" title={user ? user.email : 'Guest'}>
             <Avatar size="small" icon={<UserOutlined />} className="user-menu-avatar">
