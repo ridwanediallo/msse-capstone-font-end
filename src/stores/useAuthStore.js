@@ -1,5 +1,7 @@
 import { create } from 'zustand'
 import { apiFetch } from '../api.js'
+import useQueryStore from './useQueryStore'
+import useDatasourceStore from './useDatasourceStore'
 
 const useAuthStore = create((set, get) => ({
   user: null,
@@ -41,6 +43,8 @@ const useAuthStore = create((set, get) => ({
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`)
+      useQueryStore.getState().reset()
+      useDatasourceStore.getState().reset()
       set({
         user: data.user || null,
         isAuthenticated: Boolean(data.user),
@@ -60,6 +64,8 @@ const useAuthStore = create((set, get) => ({
     } catch {
       // server session already gone; clear client state anyway
     }
+    useQueryStore.getState().reset()
+    useDatasourceStore.getState().reset()
     set({ user: null, isAuthenticated: false, guestQuota: null })
   },
 
