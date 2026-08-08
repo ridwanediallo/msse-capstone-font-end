@@ -981,19 +981,13 @@ body {
 }
 
 /* ---------- Theme transition ---------- */
-body,
-.app-shell,
-.app-main,
-.sidebar,
-.topbar,
-.thread,
-.composer,
-.report-panel,
-.kpi-card,
-.chart-card,
-.data-card,
-.guest-quota-banner {
-  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+/* During theme toggle, disable ALL transitions to avoid flicker/cascade.
+   The .theme-switching class is added/removed by ThemeProvider. */
+html.theme-switching,
+html.theme-switching *,
+html.theme-switching *::before,
+html.theme-switching *::after {
+  transition: none !important;
 }
 
 /* ---------- SQL highlight overrides (dark) ---------- */
