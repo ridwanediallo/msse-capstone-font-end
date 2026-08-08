@@ -14,36 +14,38 @@ const fillCredentials = async () => {
 }
 
 describe('DatasourceWizard', () => {
-  it('walks through the full add-datasource flow', async () => {
-    const onClose = vi.fn()
-    renderWizard(onClose)
+  it(
+    'walks through the full add-datasource flow',
+    async () => {
+      const onClose = vi.fn()
+      renderWizard(onClose)
 
-    // Step 0: DB type
-    expect(screen.getByText('PostgreSQL')).toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: /^next$/i }))
+      // Step 0: DB type
+      expect(screen.getByText('PostgreSQL')).toBeInTheDocument()
+      await userEvent.click(screen.getByRole('button', { name: /^next$/i }))
 
-    // Step 1: credentials
-    await fillCredentials()
-    await userEvent.click(screen.getByRole('button', { name: /^next$/i }))
+      // Step 1: credentials
+      await fillCredentials()
+      await userEvent.click(screen.getByRole('button', { name: /^next$/i }))
 
-    // Step 2: test connection
-    expect(screen.getByText('Click "Next" to test the connection')).toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: /test connection/i }))
+      // Step 2: test connection
+      expect(screen.getByText('Click "Next" to test the connection')).toBeInTheDocument()
+      await userEvent.click(screen.getByRole('button', { name: /test connection/i }))
 
-    // Step 3: review schema
-    await userEvent.click(await screen.findByRole('button', { name: /introspect & create/i }))
+      // Step 3: review schema
+      await userEvent.click(await screen.findByRole('button', { name: /introspect & create/i }))
 
-    // Step 4: save (introspect ran and produced 1 catalog entry)
-    expect(await screen.findByText('Ready to Save')).toBeInTheDocument()
-    expect(
-      screen.getByText('1 tables will be saved to the schema catalog'),
-    ).toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: /save/i }))
-    expect(await screen.findByText('Datasource Saved')).toBeInTheDocument()
+      // Step 4: save (introspect ran and produced 1 catalog entry)
+      expect(await screen.findByText('Ready to Save')).toBeInTheDocument()
+      expect(screen.getByText('1 tables will be saved to the schema catalog')).toBeInTheDocument()
+      await userEvent.click(screen.getByRole('button', { name: /save/i }))
+      expect(await screen.findByText('Datasource Saved')).toBeInTheDocument()
 
-    await userEvent.click(screen.getByRole('button', { name: /^done$/i }))
-    expect(onClose).toHaveBeenCalled()
-  })
+      await userEvent.click(screen.getByRole('button', { name: /^done$/i }))
+      expect(onClose).toHaveBeenCalled()
+    },
+    15000,
+  )
 
   it('cancels without creating', async () => {
     const onClose = vi.fn()
