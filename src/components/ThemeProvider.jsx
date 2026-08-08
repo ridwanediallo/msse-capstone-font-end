@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useLayoutEffect } from 'react'
 import { ConfigProvider, theme as antdTheme } from 'antd'
 import useThemeStore, { THEME_STORAGE_KEY } from '../stores/useThemeStore'
 
@@ -65,8 +65,20 @@ function ThemeProvider({ children }) {
   const theme = useThemeStore((s) => s.theme)
   const setTheme = useThemeStore((s) => s.setTheme)
 
-  useEffect(() => {
-    document.documentElement.dataset.theme = theme
+  // Apply the data-theme attribute before paint so the CSS variables flip in
+  // the same frame as antd's tokens — avoids a one-frame light flash when
+  // toggling themes. Disable transitions during the swap to prevent flicker.
+  useLayoutEffect(() => {
+    const root = document.documentElement
+    root.classList.add('theme-switching')
+    root.dataset.theme = theme
+    // Re-enable transitions after the browser paints the new theme.
+    const raf = requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        root.classList.remove('theme-switching')
+      })
+    })
+    return () => cancelAnimationFrame(raf)
   }, [theme])
 
   // Follow the OS scheme until the user explicitly chooses a mode.
