@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Form, Input, Button, Alert, Typography } from 'antd'
-import { MailOutlined, LockOutlined } from '@ant-design/icons'
+import { MailOutlined, LockOutlined, ArrowLeftOutlined } from '@ant-design/icons'
 import useAuthStore from '../stores/useAuthStore'
 
 const { Title, Text } = Typography
@@ -67,6 +67,16 @@ function LoginPage() {
 
           <Button type="primary" htmlType="submit" size="large" block loading={submitting}>
             Sign in
+          </Button>
+
+          <Button
+            type="text"
+            block
+            icon={<ArrowLeftOutlined />}
+            className="login-back"
+            onClick={() => navigate('/')}
+          >
+            Back
           </Button>
         </Form>
       </div>

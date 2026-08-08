@@ -59,4 +59,11 @@ describe('LoginPage', () => {
     expect(await screen.findByText('Enter your email')).toBeInTheDocument()
     expect(await screen.findByText('Enter your password')).toBeInTheDocument()
   })
+
+  it('goes back to the query page without signing in', async () => {
+    renderLogin()
+    await userEvent.click(screen.getByRole('button', { name: /^arrow-left back$/i }))
+    expect(await screen.findByText('home page')).toBeInTheDocument()
+    expect(useAuthStore.getState().user).toBeNull()
+  })
 })
