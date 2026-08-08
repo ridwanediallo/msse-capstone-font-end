@@ -6,6 +6,7 @@ import { http, HttpResponse } from 'msw'
 import { server } from '../test/mocks/server'
 import useQueryStore from '../stores/useQueryStore'
 import useDatasourceStore from '../stores/useDatasourceStore'
+import useAuthStore from '../stores/useAuthStore'
 import Sidebar from './Sidebar'
 
 const Layout = () => (
@@ -77,5 +78,52 @@ describe('Sidebar', () => {
     expect(
       screen.queryByText('How many students are in each major?'),
     ).toBeNull()
+  })
+
+  it('opens email, role, and sign out from the footer user', async () => {
+    useAuthStore.setState({
+      user: { id: 'u-admin', name: 'Ada Lovelace', email: 'ada@queryable.local', role: 'admin' },
+      isAuthenticated: true,
+      guestQuota: null,
+      loading: false,
+      error: null,
+    })
+    renderSidebar()
+    await userEvent.click(screen.getByRole('button', { name: /ada lovelace/i }))
+    expect(await screen.findByText('ada@queryable.local')).toBeInTheDocument()
+    expect(screen.getAllByText('admin')).not.toHaveLength(0)
+    expect(
+      screen.getByRole('button', { name: /sign out/i }),
+    ).toBeInTheDocument()
+  })
+
+  it('signs out and returns to guest state', async () => {
+    useAuthStore.setState({
+      user: { id: 'u-admin', name: 'Ada Lovelace', email: 'ada@queryable.local', role: 'admin' },
+      isAuthenticated: true,
+      guestQuota: null,
+      loading: false,
+      error: null,
+    })
+    renderSidebar()
+    await userEvent.click(screen.getByRole('button', { name: /ada lovelace/i }))
+    await userEvent.click(await screen.findByRole('button', { name: /sign out/i }))
+    await waitFor(() => {
+      expect(useAuthStore.getState().isAuthenticated).toBe(false)
+    })
+    expect(await screen.findByText('Guest')).toBeInTheDocument()
+  })
+
+  it('shows a Sign in action for guests in the footer', async () => {
+    useAuthStore.setState({
+      user: null,
+      isAuthenticated: false,
+      guestQuota: null,
+      loading: false,
+      error: null,
+    })
+    renderSidebar()
+    await userEvent.click(screen.getByRole('button', { name: /guest/i }))
+    expect(await screen.findByRole('button', { name: /sign in/i })).toBeInTheDocument()
   })
 })

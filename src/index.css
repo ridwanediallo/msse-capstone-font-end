@@ -812,34 +812,59 @@ body {
   justify-content: center;
 }
 
-/* ---------- User menu (top bar) ---------- */
-.user-menu-btn {
+/* ---------- User menu (sidebar footer) ---------- */
+.sidebar-user-trigger {
   display: flex;
   align-items: center;
+  gap: 10px;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.sidebar-user-popover-body {
+  min-width: 200px;
+}
+
+.sidebar-user-popover-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.sidebar-user-popover-email {
+  font-size: 12px;
+  color: var(--text-faint);
+  margin-top: 2px;
+}
+
+.sidebar-user-popover-role {
+  margin-top: 10px;
+}
+
+.sidebar-user-popover-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   gap: 8px;
-  padding: 4px 10px 4px 4px;
+  width: 100%;
+  margin-top: 12px;
+  padding: 7px 12px;
   border: 1px solid var(--panel-border);
   border-radius: var(--r-sm);
   background: var(--card-bg);
+  color: var(--text);
   font-size: 13px;
   font-weight: 500;
-  color: var(--text);
   cursor: pointer;
-  box-shadow: var(--shadow-xs);
 }
 
-.user-menu-avatar.ant-avatar {
-  background: linear-gradient(135deg, var(--accent-soft), var(--teal-soft));
+.sidebar-user-popover-action:hover {
+  border-color: var(--accent-ring);
   color: var(--accent-strong);
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.user-menu-label {
-  max-width: 160px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .sidebar-role-tag {
