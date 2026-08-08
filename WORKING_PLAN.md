@@ -57,6 +57,9 @@ src/
 | **KPIs** | Cards from `kpis[]` with trend (green/red), fallback derivation from rows | `QueryPage.jsx:59-87,210-227` |
 | **Pipeline chips** | Animated step progression while loading | `QueryPage.jsx:89-110,302-320` |
 | **Suggestions** | NO_QUERY → suggestion chips user can click | `QueryPage.jsx:37-46,396-409` |
+| **Dark mode** | System-following `data-theme` toggle (localStorage) + antd dark algorithm | `ThemeProvider.jsx`, `TopBar.jsx`, `index.css` |
+| **KPI polish** | Animated count-up, number/currency/percent re-formatting, trend arrows | `KpiCard.jsx`, `lib/kpiFormat.js` |
+| **Loading skeletons** | Shimmer KPI/chart/narrative placeholders while a report runs | `QueryPage.jsx` (`LoadingPanel`) |
 | **Exports** | PDF (report panel → html2canvas → jspdf) and Excel (rows → xlsx) | `QueryPage.jsx:150-171` |
 | **Sidebar** | "Queryable" brand, New session, RECENT list with active highlight | `Sidebar.jsx` |
 | **TopBar** | Datasource pill with status dot + dropdown, History drawer | `TopBar.jsx` |
@@ -110,9 +113,12 @@ section — frontend tasks are tracked there alongside backend counterparts.
 
 High-level frontend-specific stretch items:
 - [ ] Responsive / mobile layout pass
+- [ ] Chart type heuristics for edge cases (see backend `crew/pipeline.py`)
 - [x] Chart color consistency across sessions
 - [ ] Keyboard shortcuts (Cmd+Enter, etc.)
-- [ ] Dark mode toggle
+- [x] Dark mode toggle
+- [x] KPI animations + number formatting
+- [x] Loading skeletons
 
 ---
 

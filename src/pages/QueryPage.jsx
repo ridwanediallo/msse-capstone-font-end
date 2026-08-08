@@ -18,6 +18,7 @@ import useQueryStore from '../stores/useQueryStore'
 import useDatasourceStore from '../stores/useDatasourceStore'
 import useAuthStore from '../stores/useAuthStore'
 import ChartSpec from '../components/ChartSpec'
+import KpiCard from '../components/KpiCard'
 
 hljs.registerLanguage('postgresql', postgresql)
 
@@ -194,18 +195,7 @@ function ReportPanel({ turn }) {
       {!turn.noQuery && kpis.length > 0 && (
         <div className="kpi-row">
           {kpis.map((kpi) => (
-            <div className="kpi-card" key={kpi.label}>
-              <div className="kpi-label" title={kpi.label}>{kpi.label}</div>
-              <div
-                className={
-                  'kpi-value' +
-                  (kpi.trend === 'up' ? ' positive' : kpi.trend === 'down' ? ' negative' : '')
-                }
-                title={kpi.value}
-              >
-                {kpi.value}
-              </div>
-            </div>
+            <KpiCard key={kpi.label} kpi={kpi} />
           ))}
         </div>
       )}
@@ -290,21 +280,25 @@ function ReportPanel({ turn }) {
 }
 
 function LoadingPanel() {
-  const [step, setStep] = useState(0)
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setStep((s) => Math.min(s + 1, PIPELINE_STEPS.length - 1))
-    }, 2500)
-    return () => clearInterval(timer)
-  }, [])
-
   return (
-    <div className="report-panel">
-      <PipelineChips steps={PIPELINE_STEPS} doneCount={step} activeIndex={step} />
-      <p className="narrative" style={{ color: 'var(--text-faint)' }}>
-        Working on your report…
-      </p>
+    <div className="report-panel" aria-busy="true" aria-label="Loading report">
+      <div className="skeleton-chip-row">
+        {PIPELINE_STEPS.map((label) => (
+          <span key={label} className="skeleton skeleton-chip" />
+        ))}
+      </div>
+
+      <div className="kpi-row">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="skeleton skeleton-card" />
+        ))}
+      </div>
+
+      <div className="skeleton skeleton-chart" />
+
+      <p className="skeleton skeleton-line skeleton-narrative" />
+      <p className="skeleton skeleton-line" style={{ width: '85%' }} />
+      <p className="skeleton skeleton-line" style={{ width: '65%' }} />
     </div>
   )
 }
@@ -390,7 +384,9 @@ function QueryPage() {
         <div className="thread-inner">
           {!hasTurns && !loading && (
             <div className="empty-state">
-              <DatabaseOutlined style={{ fontSize: 40, color: 'var(--text-faint)' }} />
+              <div className="empty-state-icon">
+                <DatabaseOutlined />
+              </div>
               <h2>Ask your data anything</h2>
               {suggestions.length > 0 && (
                 <div className="starter-suggestions">

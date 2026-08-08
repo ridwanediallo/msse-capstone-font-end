@@ -7,6 +7,7 @@ import { server } from '../test/mocks/server'
 import TopBar from './TopBar'
 import useDatasourceStore from '../stores/useDatasourceStore'
 import useAuthStore from '../stores/useAuthStore'
+import useThemeStore from '../stores/useThemeStore'
 
 const renderTopBar = () =>
   render(
@@ -29,6 +30,16 @@ describe('TopBar', () => {
       loading: false,
       error: null,
     })
+    useThemeStore.setState({ theme: 'light' })
+  })
+
+  it('toggles dark mode from the top bar', async () => {
+    localStorage.removeItem('queryable-theme')
+    renderTopBar()
+    const toggle = screen.getByRole('button', { name: /toggle dark mode/i })
+    await userEvent.click(toggle)
+    expect(useThemeStore.getState().theme).toBe('dark')
+    expect(localStorage.getItem('queryable-theme')).toBe('dark')
   })
 
   it('fetches datasources and shows the selected one', async () => {
