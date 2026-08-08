@@ -199,3 +199,37 @@ describe('QueryPage guest quota', () => {
     expect(screen.queryByText(/Guest 1\/5/)).toBeNull()
   })
 })
+
+describe('QueryPage loading skeleton', () => {
+  beforeEach(() => {
+    window.HTMLElement.prototype.scrollIntoView = function () {}
+    useQueryStore.setState({
+      conversationId: null,
+      turns: [],
+      suggestions: [],
+      suggestionsLoading: false,
+      error: null,
+      loading: true,
+    })
+    useDatasourceStore.setState({
+      datasources: [],
+      selectedDatasourceId: 'ds-1',
+      currentDatasource: null,
+    })
+    useAuthStore.setState({
+      user: null,
+      isAuthenticated: false,
+      guestQuota: null,
+      loading: false,
+      error: null,
+    })
+  })
+
+  it('shows a skeleton report panel while a query is loading', () => {
+    renderPage()
+    expect(screen.getByLabelText('Loading report')).toBeInTheDocument()
+    const cards = document.querySelectorAll('.skeleton-card')
+    expect(cards.length).toBeGreaterThan(0)
+    expect(document.querySelector('.skeleton-chart')).toBeInTheDocument()
+  })
+})
