@@ -1,16 +1,81 @@
-# React + Vite
+# Queryable — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React 19 + Vite single-page application for **Queryable**, a CrewAI
+multi-agent text-to-SQL reporting system. Ask questions in plain English and
+get SQL-backed answers with a narrative, KPI cards, and charts.
 
-Currently, two official plugins are available:
+> This is the **frontend** repository. The API it talks to lives in the
+> [msse-capstone-backend-](https://github.com/ridwanediallo/msse-capstone-backend-)
+> repository — see the [Related repositories](#related-repositories) section.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Features
 
-## React Compiler
+- Plain-English question box with session history and follow-up turns
+- Rendered SQL, narrative, animated KPI cards, and antv/G2 charts
+- PDF and Excel export of query results
+- Session-cookie auth with admin-only data-source management and guest quotas
+- Dark / light theme (follows the OS until you choose)
+- Responsive layout with a datasource switcher
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Tech Stack
 
-## Expanding the Oxlint configuration
+- React 19 + Vite + react-router-dom v7
+- Ant Design v6, @ant-design/charts (G2), @ant-design/icons
+- Zustand for client state, highlight.js for SQL, xlsx/jspdf for export
+- Vitest + Testing Library + MSW for tests, oxlint for linting
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+## Getting Started
+
+```bash
+npm install
+npm run dev        # Vite dev server on http://localhost:5173
+```
+
+The dev server proxies `/api` to the backend at `http://127.0.0.1:5001`
+(override with `VITE_API_URL`). You'll need the backend running first — see
+the [backend README](#related-repositories).
+
+## Scripts
+
+| Command          | Description                          |
+|------------------|--------------------------------------|
+| `npm run dev`    | Start the Vite dev server            |
+| `npm run build`  | Production build to `dist/`          |
+| `npm run lint`   | oxlint                               |
+| `npm test`       | Run the vitest suite once            |
+| `npm run preview`| Preview the production build         |
+
+## Project Layout
+
+```
+src/
+  App.jsx              # routes + auth bootstrap (fetchMe) + RequireAdmin guard
+  api.js               # apiFetch(path, opts) with credentials:'include'
+  stores/              # zustand stores (auth, queries, datasources, theme)
+  components/          # TopBar, Sidebar, ThemeProvider, KpiCard, ChartSpec, ...
+  pages/               # QueryPage, DatasourcePage, LoginPage
+  test/                # setup + MSW handlers for /api/v1/*
+```
+
+## Auth & API
+
+All requests go through `apiFetch` in `src/api.js` (no raw `fetch`), so the
+HttpOnly session cookie is always sent. The backend owns the API contract —
+mirror the `routes/` directory in the
+[msse-capstone-backend-](https://github.com/ridwanediallo/msse-capstone-backend-)
+repo. See `AGENTS.md` in this repo for conventions.
+
+## Tests
+
+```bash
+npm test
+```
+
+MSW intercepts `/api/v1/*`; register new endpoints in
+`src/test/mocks/handlers.js`.
+
+## Related Repositories
+
+| Repo | Role |
+|------|------|
+| [msse-capstone-backend-](https://github.com/ridwanediallo/msse-capstone-backend-) | Flask API, CrewAI pipeline, and database tools this app talks to |
