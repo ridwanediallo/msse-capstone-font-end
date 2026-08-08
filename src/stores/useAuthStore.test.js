@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { server } from '../test/mocks/server'
 import useAuthStore from './useAuthStore'
+import useQueryStore from './useQueryStore'
+import useDatasourceStore from './useDatasourceStore'
 
 const resetStore = () => {
   useAuthStore.setState({
@@ -10,6 +12,14 @@ const resetStore = () => {
     guestQuota: null,
     loading: true,
     error: null,
+  })
+  useQueryStore.setState({
+    loading: false, error: null, conversationId: null, turns: [],
+    conversations: [], conversationsLoading: false,
+  })
+  useDatasourceStore.setState({
+    datasources: [], selectedDatasourceId: null, currentDatasource: null,
+    loading: false, error: null,
   })
 }
 
@@ -70,6 +80,40 @@ describe('useAuthStore', () => {
       expect(state.error).toBe('Invalid email or password')
       expect(state.user).toBeNull()
     })
+
+    it('resets query and datasource session state on success', async () => {
+      useQueryStore.setState({
+        conversationId: 'conv-1',
+        turns: [{ id: 'x' }],
+        conversations: [{ id: 'conv-1' }],
+      })
+      useDatasourceStore.setState({
+        datasources: [{ id: 'ds-2' }],
+        selectedDatasourceId: 'ds-2',
+        currentDatasource: { id: 'ds-2' },
+      })
+
+      await useAuthStore.getState().login('member@queryable.local', 'pw')
+
+      const q = useQueryStore.getState()
+      expect(q.conversationId).toBeNull()
+      expect(q.turns).toHaveLength(0)
+      expect(q.conversations).toHaveLength(0)
+      const ds = useDatasourceStore.getState()
+      expect(ds.datasources).toHaveLength(0)
+      expect(ds.selectedDatasourceId).toBeNull()
+      expect(ds.currentDatasource).toBeNull()
+    })
+
+    it('does not reset session state on failure', async () => {
+      useQueryStore.setState({ conversationId: 'conv-1', turns: [{ id: 'x' }] })
+      useDatasourceStore.setState({ selectedDatasourceId: 'ds-2' })
+
+      const result = await useAuthStore.getState().login('member@queryable.local', 'wrong')
+      expect(result.ok).toBe(false)
+      expect(useQueryStore.getState().conversationId).toBe('conv-1')
+      expect(useDatasourceStore.getState().selectedDatasourceId).toBe('ds-2')
+    })
   })
 
   describe('logout', () => {
@@ -84,6 +128,33 @@ describe('useAuthStore', () => {
       expect(state.user).toBeNull()
       expect(state.isAuthenticated).toBe(false)
       expect(state.guestQuota).toBeNull()
+    })
+
+    it('resets query and datasource session state on logout', async () => {
+      useAuthStore.setState({
+        user: memberUser(),
+        isAuthenticated: true,
+        guestQuota: null,
+      })
+      useQueryStore.setState({
+        conversationId: 'conv-1',
+        turns: [{ id: 'x' }],
+        conversations: [{ id: 'conv-1' }],
+      })
+      useDatasourceStore.setState({
+        datasources: [{ id: 'ds-2' }],
+        selectedDatasourceId: 'ds-2',
+      })
+
+      await useAuthStore.getState().logout()
+
+      const q = useQueryStore.getState()
+      expect(q.conversationId).toBeNull()
+      expect(q.turns).toHaveLength(0)
+      expect(q.conversations).toHaveLength(0)
+      const ds = useDatasourceStore.getState()
+      expect(ds.datasources).toHaveLength(0)
+      expect(ds.selectedDatasourceId).toBeNull()
     })
   })
 

@@ -19,6 +19,8 @@ function RequireAdmin({ children }) {
 function App() {
   const fetchMe = useAuthStore((s) => s.fetchMe)
   const loading = useAuthStore((s) => s.loading)
+  const user = useAuthStore((s) => s.user)
+  const authKey = user?.id ? `user:${user.id}` : 'guest'
 
   useEffect(() => {
     fetchMe()
@@ -34,7 +36,7 @@ function App() {
 
   return (
     <BrowserRouter>
-      <div className="app-shell">
+      <div className="app-shell" key={authKey}>
         <Sidebar />
         <div className="app-main">
           <TopBar />

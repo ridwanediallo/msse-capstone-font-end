@@ -63,4 +63,60 @@ describe('App admin route guard', () => {
       await screen.findByRole('button', { name: /sign in/i }),
     ).toBeInTheDocument()
   })
+
+  it('refetches the session history after signing in', async () => {
+    const adminConv = {
+      id: 'conv-admin',
+      title: 'Admin revenue report',
+      turn_count: 1,
+      updated_at: '2026-08-01T00:00:00Z',
+      data_source_id: 'ds-1',
+    }
+    let signedIn = false
+    server.use(
+      http.get('/api/v1/auth/me', () =>
+        HttpResponse.json({ is_authenticated: false, user: null }),
+      ),
+      http.get('/api/v1/conversations', () =>
+        HttpResponse.json(signedIn ? [adminConv] : []),
+      ),
+      http.post('/api/v1/auth/login', async () => {
+        signedIn = true
+        return HttpResponse.json({ user: memberUser })
+      }),
+    )
+    renderAt('/')
+    expect(await screen.findByText('No sessions yet')).toBeInTheDocument()
+
+    await useAuthStore.getState().login('member@queryable.local', 'pw')
+
+    expect(
+      await screen.findByText('Admin revenue report'),
+    ).toBeInTheDocument()
+  })
+
+  it('clears the previous user recents after signing out', async () => {
+    const adminConv = {
+      id: 'conv-admin',
+      title: 'Admin revenue from recent',
+      turn_count: 1,
+      updated_at: '2026-08-01T00:00:00Z',
+      data_source_id: 'ds-1',
+    }
+    let signedOut = false
+    server.use(
+      http.get('/api/v1/conversations', () =>
+        HttpResponse.json(signedOut ? [] : [adminConv]),
+      ),
+    )
+    renderAt('/')
+    expect(
+      await screen.findByText('Admin revenue from recent'),
+    ).toBeInTheDocument()
+
+    signedOut = true
+    await useAuthStore.getState().logout()
+
+    expect(await screen.findByText('No sessions yet')).toBeInTheDocument()
+  })
 })

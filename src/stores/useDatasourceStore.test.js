@@ -92,4 +92,25 @@ describe('useDatasourceStore', () => {
       expect(useDatasourceStore.getState().datasources).toHaveLength(2)
     })
   })
+
+  describe('reset', () => {
+    it('clears the list and selection for a new identity', () => {
+      useDatasourceStore.setState({
+        datasources: [{ id: 'ds-2' }],
+        selectedDatasourceId: 'ds-2',
+        currentDatasource: { id: 'ds-2' },
+        loading: true,
+        error: 'stale',
+      })
+
+      useDatasourceStore.getState().reset()
+
+      const state = useDatasourceStore.getState()
+      expect(state.datasources).toHaveLength(0)
+      expect(state.selectedDatasourceId).toBeNull()
+      expect(state.currentDatasource).toBeNull()
+      expect(state.loading).toBe(false)
+      expect(state.error).toBeNull()
+    })
+  })
 })
