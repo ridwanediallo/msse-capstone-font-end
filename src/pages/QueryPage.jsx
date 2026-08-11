@@ -280,22 +280,17 @@ function ReportPanel({ turn }) {
 }
 
 function LoadingPanel() {
+  const stepsDone = useQueryStore((s) => s.stepsDone)
   return (
-    <div className="report-panel" aria-busy="true" aria-label="Loading report">
-      <div className="skeleton-chip-row">
-        {PIPELINE_STEPS.map((label) => (
-          <span key={label} className="skeleton skeleton-chip" />
-        ))}
+    <div className="report-panel loading-panel" aria-busy="true" aria-label="Loading report">
+      <div className="loading-status">
+        <LoadingOutlined spin style={{ color: 'var(--accent)' }} />
+        <span>Working on your report…</span>
       </div>
 
-      <div className="kpi-row">
-        {[0, 1, 2].map((i) => (
-          <div key={i} className="skeleton skeleton-card" />
-        ))}
-      </div>
+      <PipelineChips steps={PIPELINE_STEPS} doneCount={stepsDone} activeIndex={stepsDone} />
 
       <div className="skeleton skeleton-chart" />
-
       <p className="skeleton skeleton-line skeleton-narrative" />
       <p className="skeleton skeleton-line" style={{ width: '85%' }} />
       <p className="skeleton skeleton-line" style={{ width: '65%' }} />

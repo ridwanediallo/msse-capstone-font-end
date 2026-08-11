@@ -225,11 +225,24 @@ describe('QueryPage loading skeleton', () => {
     })
   })
 
-  it('shows a skeleton report panel while a query is loading', () => {
+  it('shows a loading report panel with pipeline steps while a query runs', () => {
     renderPage()
     expect(screen.getByLabelText('Loading report')).toBeInTheDocument()
-    const cards = document.querySelectorAll('.skeleton-card')
-    expect(cards.length).toBeGreaterThan(0)
+    expect(screen.getByText('Schema analyzed')).toBeInTheDocument()
+    expect(screen.getByText('Report composed')).toBeInTheDocument()
     expect(document.querySelector('.skeleton-chart')).toBeInTheDocument()
+    expect(screen.getByText(/Working on your report/)).toBeInTheDocument()
+  })
+
+  it('marks a pipeline step as complete when the stream reports it', () => {
+    useQueryStore.setState({ stepsDone: 2 })
+    renderPage()
+    const chips = document.querySelectorAll('.pipeline-chip')
+    expect(chips.length).toBe(5)
+    expect(chips[0].textContent).toContain('Schema analyzed')
+    expect(chips[0].className).not.toContain('pending')
+    expect(chips[1].className).not.toContain('pending')
+    expect(chips[2].className).not.toContain('pending')
+    expect(chips[3].className).toContain('pending')
   })
 })

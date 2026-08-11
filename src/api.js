@@ -14,3 +14,36 @@ export const apiFetch = (path, options = {}) => {
     headers,
   })
 }
+
+/**
+ * Reads a newline-delimited JSON (NDJSON) response body, invoking onLine for
+ * each parsed line as it arrives and resolving to the final payload line
+ * (the last line) once the stream completes.
+ */
+export const readNdjsonStream = async (res, onLine) => {
+  const reader = res.body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+  let lastLine = null
+
+  const handleLine = (line) => {
+    const text = line.trim()
+    if (!text) return
+    const obj = JSON.parse(text)
+    onLine?.(obj)
+    lastLine = obj
+  }
+
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    buffer += decoder.decode(value, { stream: true })
+    let idx
+    while ((idx = buffer.indexOf('\n')) !== -1) {
+      handleLine(buffer.slice(0, idx))
+      buffer = buffer.slice(idx + 1)
+    }
+  }
+  if (buffer.trim()) handleLine(buffer)
+  return lastLine
+}

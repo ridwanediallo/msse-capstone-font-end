@@ -417,6 +417,16 @@ body {
   color: var(--text-faint);
 }
 
+.loading-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+
 /* KPI cards */
 .kpi-row {
   display: grid;
@@ -931,19 +941,6 @@ body {
   100% {
     transform: translateX(100%);
   }
-}
-
-.skeleton-chip-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 18px;
-  margin-bottom: 18px;
-}
-
-.skeleton-chip {
-  width: 118px;
-  height: 16px;
-  border-radius: 999px;
 }
 
 .skeleton-card {
