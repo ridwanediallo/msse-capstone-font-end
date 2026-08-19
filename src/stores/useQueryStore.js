@@ -1,11 +1,17 @@
 import { create } from 'zustand'
-import { apiFetch } from '../api.js'
+import { apiFetch, readNdjsonStream } from '../api.js'
 import useDatasourceStore from './useDatasourceStore'
 import useAuthStore from './useAuthStore'
 
 const useQueryStore = create((set, get) => ({
   loading: false,
   error: null,
+
+  // Number of pipeline steps revealed so far during an in-flight query
+  // (0..5). The backend streams a progress line as each step actually
+  // completes: schema analyzed -> query written -> validated -> data
+  // retrieved -> report composed.
+  stepsDone: 0,
 
   conversationId: null,
   turns: [],
@@ -22,7 +28,7 @@ const useQueryStore = create((set, get) => ({
     const { conversationId } = get()
     const { selectedDatasourceId } = useDatasourceStore.getState()
 
-    set({ loading: true, error: null })
+    set({ loading: true, error: null, stepsDone: 0 })
     try {
       const body = { question, conversation_id: conversationId }
       if (!conversationId && selectedDatasourceId) {
@@ -32,8 +38,9 @@ const useQueryStore = create((set, get) => ({
         method: 'POST',
         body: JSON.stringify(body),
       })
-      const data = await res.json()
+
       if (!res.ok) {
+        const data = await res.json()
         if (data.code === 'query_quota_exceeded') {
           const d = data.details || {}
           const limit = d.limit ?? 5
@@ -44,6 +51,28 @@ const useQueryStore = create((set, get) => ({
           })
         }
         throw new Error(data.error || `HTTP ${res.status}`)
+      }
+
+      const contentType = res.headers.get('content-type') || ''
+      const data = contentType.includes('application/x-ndjson')
+        ? await readNdjsonStream(res, (obj) => {
+            if (obj.type === 'progress' && Number.isFinite(Number(obj.step))) {
+              set((s) => ({ ...s, stepsDone: Math.max(s.stepsDone, Number(obj.step) + 1) }))
+            }
+          })
+        : await res.json()
+
+      if (data.error) {
+        if (data.code === 'query_quota_exceeded') {
+          const d = data.details || {}
+          const limit = d.limit ?? 5
+          useAuthStore.getState().setGuestQuota({
+            limit,
+            used: limit,
+            remaining: d.remaining ?? 0,
+          })
+        }
+        throw new Error(data.error || 'Query failed')
       }
 
       if (data.guest_quota) {
@@ -70,12 +99,13 @@ const useQueryStore = create((set, get) => ({
         conversationId: data.conversation_id,
         turns: [...state.turns, newTurn],
         loading: false,
+        stepsDone: 0,
       }))
 
       // Refresh the recents list so a newly created session shows up
       if (isNewConversation) get().fetchConversations()
     } catch (err) {
-      set({ error: err.message, loading: false })
+      set({ error: err.message, loading: false, stepsDone: 0 })
     }
   },
 
@@ -165,6 +195,7 @@ const useQueryStore = create((set, get) => ({
       turns: [],
       suggestions: [],
       error: null,
+      stepsDone: 0,
     }),
 
   reset: () =>
@@ -177,6 +208,7 @@ const useQueryStore = create((set, get) => ({
       suggestionsLoading: false,
       conversations: [],
       conversationsLoading: false,
+      stepsDone: 0,
     }),
 
   fetchSuggestions: async (dsId) => {

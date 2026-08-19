@@ -208,7 +208,15 @@ export const handlers = [
 
   http.post('/api/v1/query', async ({ request }) => {
     const body = await request.json()
-    return HttpResponse.json(queryResponse(body.question))
+    const result = queryResponse(body.question)
+    const lines = []
+    for (let step = 0; step < 5; step += 1) {
+      lines.push(JSON.stringify({ type: 'progress', step }))
+    }
+    lines.push(JSON.stringify({ type: 'result', ...result }))
+    return HttpResponse.text(lines.join('\n'), {
+      headers: { 'Content-Type': 'application/x-ndjson' },
+    })
   }),
 
   http.get('/api/v1/conversations', ({ request }) => {

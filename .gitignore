@@ -16,6 +16,9 @@ coverage
 # Environment variables
 .env
 
+# Generated query exports
+query-results.xlsx
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
