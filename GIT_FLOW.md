@@ -94,4 +94,6 @@ chore: update dependencies
 - Never merge a PR that has not been approved by a reviewer
 - PR title should match commit format (e.g., `feat: Phase 9 — Conversation memory`)
 - PR description should reference the phase/task being implemented
+- Architecture-impacting changes (see `AGENTS.md`) must include an ADR under
+  `docs/adr/`, linked in the PR description
 - Squash merge preferred for clean history

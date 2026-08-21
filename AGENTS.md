@@ -7,6 +7,33 @@ committing, PR, and merge conventions (branch from fresh `dev`, kebab-case
 `type/description` branches, Conventional Commits, PR → reviewer approval →
 merge on GitHub). Following it is mandatory for all work in this repo.
 
+## Architecture Change Policy
+
+Any change that impacts the architecture must be documented in an ADR
+(Architecture Decision Record) under `docs/adr/` **before merge**. This applies
+to:
+
+- Stack or infrastructure choices (frameworks, state management, charting, build tooling)
+- App-level data-flow patterns: new global stores, routing guard strategy,
+  API client mechanics (`src/api.js`)
+- API contract shape consumed from the backend: endpoints, request/response
+  fields, error codes, auth/session flow
+- Security-relevant behavior: credential handling, token/cookie usage, XSS-sensitive rendering
+
+Process:
+
+1. Copy `docs/adr/0000-template.md` to `docs/adr/NNNN-kebab-title.md`
+   (next free number, kebab-case).
+2. Fill Context / Decision / Consequences concisely — one screen max.
+3. Link the ADR in the PR description; reviewers should block merges without it.
+4. Update this file's Conventions/Gotchas if they change.
+
+Implementation-level fixes (bug fixes, styles, component tweaks, tests) do not
+need an ADR — when unsure, ask in the PR. The backend repo
+(`msse-capstone-backend-`) carries the same policy; a cross-repo contract change
+needs an ADR in both. This file is loaded automatically by coding agents, which
+is what makes the policy enforceable in practice — keep it accurate.
+
 ## What This Is
 
 React 19 + Vite SPA for a CrewAI multi-agent text-to-SQL reporting system.
