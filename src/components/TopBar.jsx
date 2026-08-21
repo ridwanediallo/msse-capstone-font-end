@@ -68,7 +68,7 @@ function TopBar() {
             key: 'manage',
             label: 'Manage data sources',
             icon: <SettingOutlined />,
-            onClick: () => navigate('/datasources'),
+            onClick: () => navigate('/admin/datasources'),
           },
         ]
       : []),
@@ -96,7 +96,7 @@ function TopBar() {
         {isAdmin && (
           <Button
             icon={<DatabaseOutlined />}
-            onClick={() => navigate('/datasources')}
+            onClick={() => navigate('/admin/datasources')}
             title="Data sources"
           />
         )}
