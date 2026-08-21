@@ -51,7 +51,9 @@ src/
 - **UI library**: antd v6 (components), `@ant-design/icons`, zustand for state,
   react-router-dom v7, no TypeScript.
 - **API calls**: always go through `apiFetch` from `src/api.js` — never raw
-  `fetch`. New endpoints must use it so the auth cookie is sent.
+  `fetch`. New endpoints must use it so the auth cookie is sent. Mutating
+  requests automatically get the `X-CSRFToken` header (CSRF is enforced by the
+  backend; see `docs/adr/0001`).
 - **Route guards**: `/datasources` is admin-only (`RequireAdmin` in `App.jsx`).
   Guests see the query page with a quota banner; sign-in is at `/login`.
 - **State**: component-free state in zustand stores under `src/stores/`; new
