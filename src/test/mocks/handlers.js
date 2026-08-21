@@ -136,6 +136,9 @@ const queryResponse = (question) => ({
 })
 
 export const handlers = [
+  http.get('/api/v1/auth/csrf', () =>
+    HttpResponse.json({ csrf_token: 'test-csrf-token' }),
+  ),
   http.get('/api/v1/auth/me', () =>
     HttpResponse.json({ is_authenticated: true, user: adminUser }),
   ),
