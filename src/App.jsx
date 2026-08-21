@@ -1,19 +1,27 @@
 import { useEffect } from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import { Spin } from 'antd'
 import Sidebar from './components/Sidebar'
 import TopBar from './components/TopBar'
+import AdminLayout from './components/AdminLayout'
 import QueryPage from './pages/QueryPage'
 import DatasourcePage from './pages/DatasourcePage'
 import LoginPage from './pages/LoginPage'
+import UsersPage from './pages/UsersPage'
+import AuditPage from './pages/AuditPage'
+import AcceptInvitePage from './pages/AcceptInvitePage'
 import useAuthStore from './stores/useAuthStore'
 
-function RequireAdmin({ children }) {
-  const user = useAuthStore((s) => s.user)
-  if (!user || user.role !== 'admin') {
-    return <Navigate to="/" replace />
-  }
-  return children
+function AppShell({ authKey }) {
+  return (
+    <div className="app-shell" key={authKey}>
+      <Sidebar />
+      <div className="app-main">
+        <TopBar />
+        <Outlet />
+      </div>
+    </div>
+  )
 }
 
 function App() {
@@ -36,25 +44,21 @@ function App() {
 
   return (
     <BrowserRouter>
-      <div className="app-shell" key={authKey}>
-        <Sidebar />
-        <div className="app-main">
-          <TopBar />
-          <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/" element={<QueryPage />} />
-            <Route
-              path="/datasources"
-              element={
-                <RequireAdmin>
-                  <DatasourcePage />
-                </RequireAdmin>
-              }
-            />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </div>
-      </div>
+      <Routes>
+        <Route path="/invite" element={<AcceptInvitePage />} />
+        <Route path="/admin" element={<AdminLayout key={authKey} />}>
+          <Route index element={<Navigate to="/admin/users" replace />} />
+          <Route path="users" element={<UsersPage />} />
+          <Route path="datasources" element={<DatasourcePage />} />
+          <Route path="audit-log" element={<AuditPage />} />
+        </Route>
+        <Route element={<AppShell authKey={authKey} />}>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/" element={<QueryPage />} />
+          <Route path="/datasources" element={<Navigate to="/admin/datasources" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
+      </Routes>
     </BrowserRouter>
   )
 }

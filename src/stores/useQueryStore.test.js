@@ -12,6 +12,7 @@ const resetStore = () => {
     turns: [],
     conversations: [],
     conversationsLoading: false,
+    stepsDone: 0,
   })
 }
 
@@ -118,6 +119,76 @@ describe('useQueryStore', () => {
       const state = useQueryStore.getState()
       expect(state.error).toBe('LLM exploded')
       expect(state.loading).toBe(false)
+    })
+
+    it('advances stepsDone as progress lines stream in', async () => {
+      server.use(
+        http.post('/api/v1/query', () => {
+          const stream = new ReadableStream({
+            start(controller) {
+              for (let step = 0; step < 5; step += 1) {
+                controller.enqueue(
+                  new TextEncoder().encode(`${JSON.stringify({ type: 'progress', step })}\n`),
+                )
+              }
+              controller.enqueue(
+                new TextEncoder().encode(
+                  `${JSON.stringify({
+                    type: 'result',
+                    summary: 'ok',
+                    chart_spec: null,
+                    kpis: null,
+                    sql: 'SELECT 1',
+                    rows: [],
+                    row_count: 0,
+                    execution_time: 0.1,
+                    no_query: false,
+                    conversation_id: 'conv-1',
+                    turn_id: 't1',
+                  })}\n`,
+                ),
+              )
+              controller.close()
+            },
+          })
+          return new HttpResponse(stream, {
+            headers: { 'Content-Type': 'application/x-ndjson' },
+          })
+        }),
+      )
+
+      const seen = []
+      useQueryStore.subscribe((s) => seen.push(s.stepsDone))
+      const promise = useQueryStore.getState().submitQuery('question')
+      await promise
+
+      const state = useQueryStore.getState()
+      expect(state.loading).toBe(false)
+      expect(state.turns).toHaveLength(1)
+      // Each step was revealed before the final reset to 0 after completion.
+      expect(seen).toContain(1)
+      expect(seen).toContain(5)
+      expect(state.stepsDone).toBe(0)
+    })
+
+    it('surfaces a streamed error line as an error', async () => {
+      server.use(
+        http.post('/api/v1/query', () =>
+          HttpResponse.text(
+            [
+              JSON.stringify({ type: 'progress', step: 0 }),
+              JSON.stringify({ type: 'error', error: 'Datasource is down', code: 'query_failed', request_id: 'abc' }),
+            ].join('\n'),
+            { headers: { 'Content-Type': 'application/x-ndjson' } },
+          ),
+        ),
+      )
+      await useQueryStore.getState().submitQuery('question')
+
+      const state = useQueryStore.getState()
+      expect(state.error).toBe('Datasource is down')
+      expect(state.loading).toBe(false)
+      expect(state.stepsDone).toBe(0)
     })
   })
 
