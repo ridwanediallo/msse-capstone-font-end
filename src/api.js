@@ -31,7 +31,11 @@ export const ensureCsrfToken = async () => {
   await csrfFetch
 }
 
-export const apiFetch = async (path, options = {}) => {
+export const clearCsrfToken = () => {
+  document.cookie = `${CSRF_COOKIE}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`
+}
+
+export const apiFetch = async (path, options = {}, _retried = false) => {
   const headers = options.headers ? { ...options.headers } : {}
   if (options.body) {
     headers['Content-Type'] = 'application/json'
@@ -42,11 +46,19 @@ export const apiFetch = async (path, options = {}) => {
     const token = readCookie(CSRF_COOKIE)
     if (token) headers['X-CSRFToken'] = token
   }
-  return fetch(apiUrl(path), {
+  const res = await fetch(apiUrl(path), {
     ...options,
     credentials: 'include',
     headers,
   })
+  if (res.status === 403 && !_retried) {
+    const body = await res.clone().json().catch(() => null)
+    if (body?.code === 'csrf_invalid') {
+      clearCsrfToken()
+      return apiFetch(path, options, true)
+    }
+  }
+  return res
 }
 
 /**
