@@ -6,6 +6,23 @@ const PALETTE = ['#4f46e5', '#0d9488', '#f59e0b', '#ef4444', '#7c3aed', '#06b6d4
 
 const COMPONENTS = { bar: Bar, column: Column, line: Line, pie: Pie, scatter: Scatter }
 
+// DB drivers may deliver numbers as strings (e.g. Postgres NUMERIC via JSON).
+// Angle/size channels in G2 need real numbers, so coerce defensively.
+function toNumber(value) {
+  if (typeof value === 'string' && value.trim() !== '' && !Number.isNaN(Number(value))) {
+    return Number(value)
+  }
+  return value
+}
+
+export function normalizeRows(rows) {
+  if (!Array.isArray(rows)) return rows
+  return rows.map((row) => {
+    if (typeof row !== 'object' || row === null) return row
+    return Object.fromEntries(Object.entries(row).map(([k, v]) => [k, toNumber(v)]))
+  })
+}
+
 function baseConfig(rows, spec) {
   const hasSeries = Boolean(spec.series || spec.type === 'pie' || spec.type === 'scatter')
   return {
@@ -30,13 +47,23 @@ export function buildConfig(spec, rows) {
   const base = baseConfig(rows, spec)
 
   if (spec.type === 'pie') {
+    const total = rows.reduce((sum, r) => sum + (Number(r[y]) || 0), 0)
     return {
       ...base,
       angleField: y,
       colorField: x,
       radius: 0.9,
       innerRadius: 0.5,
-      label: { type: 'outer', content: '{name}: {percentage}' },
+      labels: [
+        {
+          position: 'outside',
+          text: (datum) => {
+            const value = Number(datum[y]) || 0
+            const pct = total ? ((value / total) * 100).toFixed(1) : '0'
+            return `${datum[x]}: ${pct}%`
+          },
+        },
+      ],
       legend: { position: 'bottom' },
     }
   }
@@ -87,14 +114,15 @@ export default function ChartSpec({ spec, rows }) {
   const theme = useThemeStore((s) => s.theme)
   const type = spec?.type
   const Component = COMPONENTS[type]
-  if (!Component || type === 'none' || !rows || rows.length === 0) {
+  const data = normalizeRows(rows)
+  if (!Component || type === 'none' || !data || data.length === 0) {
     return null
   }
   return (
     <div className="chart-card">
       {spec.title ? <h3 className="chart-title">{spec.title}</h3> : null}
       <Component
-        {...buildConfig(spec, rows)}
+        {...buildConfig(spec, data)}
         theme={theme === 'dark' ? 'classicDark' : 'classic'}
       />
     </div>
