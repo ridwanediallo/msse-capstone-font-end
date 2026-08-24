@@ -54,6 +54,7 @@
   --accent-ink-muted: #6d83c7;
   --accent-border: #dbe2ff;
   --danger-soft: #fef2f2;
+  --skeleton-bg: #ecebe7;
   --skeleton-shine: rgba(255, 255, 255, 0.6);
 }
 
@@ -96,6 +97,7 @@
   --accent-ink-muted: #8b9cd9;
   --accent-border: #373b5c;
   --danger-soft: #2a1719;
+  --skeleton-bg: #1f1f28;
   --skeleton-shine: rgba(255, 255, 255, 0.07);
 
   /* Elevation */
@@ -920,7 +922,7 @@ body {
   position: relative;
   overflow: hidden;
   border-radius: var(--r-sm);
-  background: var(--panel-bg);
+  background: var(--skeleton-bg);
 }
 
 .skeleton::after {
