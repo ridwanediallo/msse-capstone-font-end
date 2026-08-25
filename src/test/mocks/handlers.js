@@ -20,6 +20,16 @@ const memberUser = {
   last_login_at: null,
 }
 
+const memberUser2 = {
+  id: 'u-member-2',
+  email: 'member2@queryable.local',
+  name: 'Second Member',
+  role: 'member',
+  is_active: true,
+  created_at: '2026-07-02T00:00:00Z',
+  last_login_at: null,
+}
+
 const datasources = [
   {
     id: 'ds-1',
@@ -159,6 +169,46 @@ export const handlers = [
     return HttpResponse.json({ user: memberUser })
   }),
   http.post('/api/v1/auth/logout', () => HttpResponse.json({ ok: true })),
+
+  http.get('/api/v1/admin/users', ({ request }) => {
+    const url = new URL(request.url)
+    const role = url.searchParams.get('role')
+    const items =
+      role === 'member' ? [memberUser, memberUser2] : [adminUser, memberUser, memberUser2]
+    return HttpResponse.json({ total: items.length, items })
+  }),
+
+  http.get('/api/v1/admin/datasources/:id/grants', () =>
+    HttpResponse.json([
+      {
+        id: 'grant-1',
+        user_id: 'u-member',
+        data_source_id: 'ds-1',
+        granted_by: 'u-admin',
+        created_at: '2026-08-01T00:00:00Z',
+      },
+    ]),
+  ),
+  http.post('/api/v1/admin/datasources/:id/grants', async ({ request }) => {
+    const body = await request.json()
+    if (!body.user_id) {
+      return HttpResponse.json(
+        { error: 'user_id is required', code: 'missing_fields' },
+        { status: 400 },
+      )
+    }
+    return HttpResponse.json(
+      {
+        id: 'grant-new',
+        user_id: body.user_id,
+        data_source_id: 'ds-1',
+        granted_by: 'u-admin',
+        created_at: '2026-08-20T00:00:00Z',
+      },
+      { status: 201 },
+    )
+  }),
+  http.delete('/api/v1/admin/grants/:id', () => HttpResponse.json({ ok: true })),
 
   http.get('/api/v1/datasources', () => HttpResponse.json(datasources)),
   http.post('/api/v1/datasources', () =>
