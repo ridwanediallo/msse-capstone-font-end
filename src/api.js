@@ -14,39 +14,80 @@ let csrfFetch = null
 // Lazily fetch a CSRF token before the first mutating request. The token is
 // bound to the server session and echoed back in the X-CSRFToken header
 // (see docs/adr/0001 in the backend repo).
-export const ensureCsrfToken = async () => {
-  if (readCookie(CSRF_COOKIE)) return
-  if (!csrfFetch) {
-    csrfFetch = fetch(apiUrl('/auth/csrf'), { credentials: 'include' })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data?.csrf_token) {
-          document.cookie = `csrf_token=${encodeURIComponent(data.csrf_token)}; path=/; samesite=lax`
-        }
-      })
-      .finally(() => {
-        csrfFetch = null
-      })
+//
+// `force` overwrites a cached cookie: the cookie alone is not proof the token
+// still matches the server session (logout, session expiry or re-login
+// invalidate it server-side), so callers must be able to recover from a 403.
+export const ensureCsrfToken = async (force = false) => {
+  if (!force && readCookie(CSRF_COOKIE)) return
+  if (!force && csrfFetch) {
+    await csrfFetch
+    return
   }
+  csrfFetch = fetch(apiUrl('/auth/csrf'), { credentials: 'include' })
+    .then((res) => (res.ok ? res.json() : null))
+    .then((data) => {
+      if (data?.csrf_token) {
+        document.cookie = `csrf_token=${encodeURIComponent(data.csrf_token)}; path=/; samesite=lax`
+      }
+    })
+    .finally(() => {
+      csrfFetch = null
+    })
   await csrfFetch
 }
 
+const isCsrfRejection = async (res) => {
+  if (res.status !== 403) return false
+  try {
+    const data = await res.clone().json()
+    return data?.code === 'csrf_invalid'
+  } catch {
+    return false
+  }
+}
+
 export const apiFetch = async (path, options = {}) => {
-  const headers = options.headers ? { ...options.headers } : {}
-  if (options.body) {
-    headers['Content-Type'] = 'application/json'
+  const withToken = async () => {
+    const headers = options.headers ? { ...options.headers } : {}
+    if (options.body) {
+      headers['Content-Type'] = 'application/json'
+    }
+    const method = (options.method || 'GET').toUpperCase()
+    if (!['GET', 'HEAD', 'OPTIONS'].includes(method) && !headers['X-CSRFToken']) {
+      await ensureCsrfToken()
+      const token = readCookie(CSRF_COOKIE)
+      if (token) headers['X-CSRFToken'] = token
+    }
+    return headers
   }
-  const method = (options.method || 'GET').toUpperCase()
-  if (!['GET', 'HEAD', 'OPTIONS'].includes(method) && !headers['X-CSRFToken']) {
-    await ensureCsrfToken()
-    const token = readCookie(CSRF_COOKIE)
-    if (token) headers['X-CSRFToken'] = token
-  }
-  return fetch(apiUrl(path), {
+
+  const headers = await withToken()
+  let res = await fetch(apiUrl(path), {
     ...options,
     credentials: 'include',
     headers,
   })
+
+  // A 403 csrf_invalid means the cached token no longer matches the server
+  // session. Force-refresh once and retry; if it fails again, surface it —
+  // never loop.
+  if (
+    !['GET', 'HEAD', 'OPTIONS'].includes((options.method || 'GET').toUpperCase()) &&
+    (await isCsrfRejection(res))
+  ) {
+    await ensureCsrfToken(true)
+    const retryHeaders = { ...headers }
+    const fresh = readCookie(CSRF_COOKIE)
+    if (fresh) retryHeaders['X-CSRFToken'] = fresh
+    res = await fetch(apiUrl(path), {
+      ...options,
+      credentials: 'include',
+      headers: retryHeaders,
+    })
+  }
+
+  return res
 }
 
 /**

@@ -4,10 +4,11 @@ import {
 } from 'antd'
 import {
   PlusOutlined, DeleteOutlined, ReloadOutlined,
-  CheckCircleOutlined,
+  CheckCircleOutlined, TeamOutlined,
 } from '@ant-design/icons'
 import useDatasourceStore from '../stores/useDatasourceStore'
 import DatasourceWizard from '../components/DatasourceWizard'
+import GrantsDrawer from '../components/GrantsDrawer'
 
 const { Title, Text } = Typography
 
@@ -17,6 +18,7 @@ function DatasourcePage() {
   } = useDatasourceStore()
 
   const [wizardOpen, setWizardOpen] = useState(false)
+  const [grantsTarget, setGrantsTarget] = useState(null)
 
   useEffect(() => {
     fetchDatasources()
@@ -88,6 +90,15 @@ function DatasourcePage() {
         <Space>
           <Button
             size="small"
+            icon={<TeamOutlined />}
+            onClick={() => setGrantsTarget(record)}
+            disabled={record.is_sample}
+            title={record.is_sample ? 'All members can query the sample datasource' : undefined}
+          >
+            Access
+          </Button>
+          <Button
+            size="small"
             icon={<ReloadOutlined />}
             onClick={() => handleRefresh(record.id)}
             disabled={record.status !== 'ready'}
@@ -138,6 +149,12 @@ function DatasourcePage() {
       <DatasourceWizard
         open={wizardOpen}
         onClose={() => setWizardOpen(false)}
+      />
+
+      <GrantsDrawer
+        datasource={grantsTarget}
+        open={grantsTarget !== null}
+        onClose={() => setGrantsTarget(null)}
       />
     </div>
   )
