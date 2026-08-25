@@ -32,7 +32,10 @@ npm run dev        # Vite dev server on http://localhost:5173
 ```
 
 The dev server proxies `/api` to the backend at `http://127.0.0.1:5001`
-(override with `VITE_API_URL`). You'll need the backend running first — see
+(override with `VITE_API_URL`, which only affects the dev proxy). For
+production builds, set `VITE_API_BASE` to the backend's absolute origin —
+it gets compiled into the client bundle (see `.env.example`). You'll need
+the backend running first — see
 the [backend README](#related-repositories).
 
 ## Scripts

@@ -325,7 +325,7 @@ function GuestQuotaBanner({ quota }) {
 function QueryPage() {
   const {
     turns, loading, error, submitQuery, newConversation, conversationId,
-    suggestions, fetchSuggestions,
+    suggestions, fetchSuggestions, lastFailedQuestion,
   } = useQueryStore()
 
   const { selectedDatasourceId } = useDatasourceStore()
@@ -366,8 +366,10 @@ function QueryPage() {
   }
 
   const handleRetry = () => {
-    const lastTurn = turns[turns.length - 1]
-    if (lastTurn) submitQuery(lastTurn.question)
+    // A failed submit never creates a turn, so prefer the failed question;
+    // fall back to the last turn only when there is nothing failed to redo.
+    const question = lastFailedQuestion ?? turns[turns.length - 1]?.question
+    if (question) submitQuery(question)
   }
 
   const latestTurn = hasTurns ? turns[turns.length - 1] : null

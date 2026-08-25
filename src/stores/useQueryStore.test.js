@@ -121,6 +121,35 @@ describe('useQueryStore', () => {
       expect(state.loading).toBe(false)
     })
 
+    it('remembers the failed question so Retry can resubmit it', async () => {
+      server.use(
+        http.post('/api/v1/query', () =>
+          HttpResponse.json({ error: 'LLM exploded' }, { status: 500 }),
+        ),
+      )
+      await useQueryStore.getState().submitQuery('the question that failed')
+      expect(useQueryStore.getState().lastFailedQuestion).toBe(
+        'the question that failed',
+      )
+
+      // A subsequent successful submit clears it.
+      server.use(
+        http.post('/api/v1/query', () =>
+          HttpResponse.json({
+            summary: 'Answered: ok',
+            sql: 'SELECT 1',
+            rows: [],
+            row_count: 0,
+            no_query: false,
+            conversation_id: 'conv-1',
+            turn_id: 'turn-2',
+          }),
+        ),
+      )
+      await useQueryStore.getState().submitQuery('a good question')
+      expect(useQueryStore.getState().lastFailedQuestion).toBeNull()
+    })
+
     it('advances stepsDone as progress lines stream in', async () => {
       server.use(
         http.post('/api/v1/query', () => {

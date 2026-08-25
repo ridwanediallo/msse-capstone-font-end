@@ -7,6 +7,10 @@ const useQueryStore = create((set, get) => ({
   loading: false,
   error: null,
 
+  // The question whose submit last failed — Retry must resubmit THIS, not
+  // the previous successful turn (a failed submit never creates a turn).
+  lastFailedQuestion: null,
+
   // Number of pipeline steps revealed so far during an in-flight query
   // (0..5). The backend streams a progress line as each step actually
   // completes: schema analyzed -> query written -> validated -> data
@@ -100,12 +104,13 @@ const useQueryStore = create((set, get) => ({
         turns: [...state.turns, newTurn],
         loading: false,
         stepsDone: 0,
+        lastFailedQuestion: null,
       }))
 
       // Refresh the recents list so a newly created session shows up
       if (isNewConversation) get().fetchConversations()
     } catch (err) {
-      set({ error: err.message, loading: false, stepsDone: 0 })
+      set({ error: err.message, loading: false, stepsDone: 0, lastFailedQuestion: question })
     }
   },
 
@@ -202,6 +207,7 @@ const useQueryStore = create((set, get) => ({
     set({
       loading: false,
       error: null,
+      lastFailedQuestion: null,
       conversationId: null,
       turns: [],
       suggestions: [],
