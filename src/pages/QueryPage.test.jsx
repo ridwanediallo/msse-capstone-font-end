@@ -246,3 +246,74 @@ describe('QueryPage loading skeleton', () => {
     expect(chips[3].className).toContain('pending')
   })
 })
+
+describe('QueryPage retry after failure', () => {
+  beforeEach(() => {
+    window.HTMLElement.prototype.scrollIntoView = function () {}
+    useQueryStore.setState({
+      conversationId: 'conv-1',
+      turns: [
+        {
+          id: 'turn-1',
+          question: 'the previous successful question',
+          summary: 'Answered: the previous successful question',
+          sql: 'SELECT 1',
+          rows: [{ n: 1 }],
+          rowCount: 1,
+          chartSpec: null,
+          kpis: null,
+          executionTime: 0.1,
+          noQuery: false,
+          questionResolved: null,
+        },
+      ],
+      suggestions: [],
+      suggestionsLoading: false,
+      error: 'The server is busy processing other queries.',
+      loading: false,
+      lastFailedQuestion: 'the question that failed',
+    })
+    useDatasourceStore.setState({
+      datasources: [],
+      selectedDatasourceId: 'ds-1',
+      currentDatasource: null,
+    })
+    useAuthStore.setState({
+      user: null,
+      isAuthenticated: false,
+      guestQuota: { limit: 5, used: 2, remaining: 3 },
+      loading: false,
+      error: null,
+    })
+  })
+
+  it('resubmits the failed question, not the previous turn', async () => {
+    const submitSpy = vi.fn()
+    const real = useQueryStore.getState().submitQuery
+    useQueryStore.setState({ submitQuery: submitSpy })
+
+    try {
+      renderPage()
+      await userEvent.click(screen.getByRole('button', { name: /retry/i }))
+      expect(submitSpy).toHaveBeenCalledWith('the question that failed')
+      expect(submitSpy).not.toHaveBeenCalledWith('the previous successful question')
+    } finally {
+      useQueryStore.setState({ submitQuery: real })
+    }
+  })
+
+  it('falls back to the last turn when nothing failed', async () => {
+    useQueryStore.setState({ lastFailedQuestion: null })
+    const submitSpy = vi.fn()
+    const real = useQueryStore.getState().submitQuery
+    useQueryStore.setState({ submitQuery: submitSpy })
+
+    try {
+      renderPage()
+      await userEvent.click(screen.getByRole('button', { name: /retry/i }))
+      expect(submitSpy).toHaveBeenCalledWith('the previous successful question')
+    } finally {
+      useQueryStore.setState({ submitQuery: real })
+    }
+  })
+})
