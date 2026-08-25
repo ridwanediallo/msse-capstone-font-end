@@ -101,8 +101,10 @@ src/
 - ChartSpec renders an antv/G2 canvas that jsdom can't rasterize — tests that
   render it must `vi.mock('../components/ChartSpec', ...)` (see QueryPage.test).
 - antd v5/v6 components need jsdom polyfills already in `src/test/setup.js`.
-- `src/api.js` reads `VITE_API_BASE` (empty in dev) — the Vite proxy handles
-  the backend URL.
+- Two distinct env vars: `VITE_API_URL` = dev-only proxy target in
+  `vite.config.js` (never reaches the client bundle); `VITE_API_BASE` =
+  backend origin compiled into the client for production builds
+  (`src/api.js`, empty in dev). Don't swap them — see `.env.example`.
 
 ## Phase Status
 
