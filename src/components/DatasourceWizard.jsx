@@ -41,6 +41,7 @@ function DatasourceWizard({ open, onClose }) {
     createDatasource,
     introspectSchema,
     fetchDatasources,
+    updateSchemaEntry,
   } = useDatasourceStore();
 
   const [current, setCurrent] = useState(0);
@@ -51,7 +52,7 @@ function DatasourceWizard({ open, onClose }) {
   const [introspecting, setIntrospecting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [, setCreatedId] = useState(null);
+  const [createdId, setCreatedId] = useState(null);
   const [stepError, setStepError] = useState(null);
 
   const [form] = Form.useForm();
@@ -76,7 +77,11 @@ function DatasourceWizard({ open, onClose }) {
     }
 
     if (current === 3) {
-      await handleIntrospect();
+      if (schemaData.length > 0) {
+        setCurrent((prev) => prev + 1);
+      } else {
+        await handleIntrospect();
+      }
       return;
     }
 
@@ -156,7 +161,6 @@ function DatasourceWizard({ open, onClose }) {
       if (introspectResult.ok) {
         setSchemaData(introspectResult.data);
         setStepError(null);
-        setCurrent((prev) => prev + 1);
       } else {
         setStepError(introspectResult.error);
       }
@@ -169,10 +173,28 @@ function DatasourceWizard({ open, onClose }) {
   const handleSave = async () => {
     setStepError(null);
     setSaving(true);
-    // Datasource is already created, just mark as saved
-    await fetchDatasources();
-    setSaved(true);
-    setSaving(false);
+    try {
+      // Persist curation (ADR-0006): excluded tables and descriptions feed
+      // the pipeline's prompts and define the Guardian allowlist. Entries
+      // left at their defaults need no request — the backend defaults
+      // is_included to true on introspection.
+      const curated = schemaData.filter(
+        (t) => t.is_included === false || (t.description || '').trim()
+      );
+      for (const entry of curated) {
+        const result = await updateSchemaEntry(createdId, entry.id, {
+          is_included: entry.is_included !== false,
+          ...(entry.description ? { description: entry.description } : {}),
+        });
+        if (!result.ok) throw new Error(result.error);
+      }
+      await fetchDatasources();
+      setSaved(true);
+    } catch (err) {
+      setStepError('Could not save schema settings: ' + err.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleClose = () => {
@@ -190,6 +212,12 @@ function DatasourceWizard({ open, onClose }) {
   const toggleTableIncluded = (index, checked) => {
     const updated = [...schemaData];
     updated[index] = { ...updated[index], is_included: checked };
+    setSchemaData(updated);
+  };
+
+  const setTableDescription = (index, description) => {
+    const updated = [...schemaData];
+    updated[index] = { ...updated[index], description };
     setSchemaData(updated);
   };
 
@@ -326,14 +354,30 @@ function DatasourceWizard({ open, onClose }) {
                     render: (val) => val?.toLocaleString() || '0',
                   },
                   {
+                    title: 'Description (helps the AI)',
+                    key: 'description',
+                    render: (_, record, index) => (
+                      <Input
+                        size="small"
+                        placeholder="e.g. customer master list"
+                        value={record.description || ''}
+                        onChange={(e) =>
+                          setTableDescription(index, e.target.value)
+                        }
+                        aria-label={`Description for ${record.table_name}`}
+                      />
+                    ),
+                  },
+                  {
                     title: 'Include',
                     key: 'is_included',
                     render: (_, record, index) => (
                       <Switch
-                        defaultChecked={record.is_included !== false}
+                        checked={record.is_included !== false}
                         onChange={(checked) =>
                           toggleTableIncluded(index, checked)
                         }
+                        aria-label={`Include ${record.table_name}`}
                       />
                     ),
                   },
@@ -362,6 +406,14 @@ function DatasourceWizard({ open, onClose }) {
             <Text type="secondary">
               {schemaData.length} tables will be saved to the schema catalog
             </Text>
+            {schemaData.some((t) => t.is_included === false) && (
+              <div style={{ marginTop: 8 }}>
+                <WarningOutlined style={{ color: '#faad14', marginRight: 6 }} />
+                <Text type="warning">
+                  Excluded tables are hidden from the AI and cannot be queried
+                </Text>
+              </div>
+            )}
           </div>
         );
 
@@ -398,7 +450,7 @@ function DatasourceWizard({ open, onClose }) {
               {current === 2
                 ? 'Test Connection'
                 : current === 3
-                  ? 'Introspect & Create'
+                  ? schemaData.length > 0 ? 'Next' : 'Introspect & Create'
                   : current === 4
                     ? 'Save'
                     : 'Next'}

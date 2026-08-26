@@ -107,8 +107,10 @@ function DatasourcePage() {
           </Button>
           <Popconfirm
             title="Delete this datasource?"
+            description="Its conversation history will be deleted too."
             onConfirm={() => handleDelete(record.id)}
             okText="Delete"
+            okButtonProps={{ danger: true }}
             cancelText="Cancel"
           >
             <Button size="small" danger icon={<DeleteOutlined />}>
