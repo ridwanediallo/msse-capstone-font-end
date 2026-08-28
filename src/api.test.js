@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { http, HttpResponse } from 'msw'
-import { apiFetch } from './api'
+import { apiFetch, readNdjsonStream } from './api'
 import { server } from './test/mocks/server'
 
 const clearCsrfCookie = () => {
@@ -169,5 +169,44 @@ describe('apiFetch CSRF handling', () => {
 
     expect(res.status).toBe(403)
     expect(attempts).toBe(1)
+  })
+})
+
+describe('readNdjsonStream', () => {
+  const streamResponse = (chunks) => {
+    const encoder = new TextEncoder()
+    const body = new ReadableStream({
+      start(controller) {
+        for (const chunk of chunks) controller.enqueue(encoder.encode(chunk))
+        controller.close()
+      },
+    })
+    return new Response(body)
+  }
+
+  it('skips SSE-style :keepalive heartbeat lines and parses JSON lines', async () => {
+    // Interleave heartbeats (as the backend emits them) between real events.
+    const res = streamResponse([
+      ':keepalive\n',
+      '{"type":"progress","step":1}\n',
+      ':keepalive\n',
+      '{"type":"result","row_count":42}\n',
+    ])
+
+    const seen = []
+    const last = await readNdjsonStream(res, (obj) => seen.push(obj))
+
+    // Heartbeats never reach JSON.parse; only the two JSON lines do.
+    expect(seen).toEqual([
+      { type: 'progress', step: 1 },
+      { type: 'result', row_count: 42 },
+    ])
+    expect(last).toEqual({ type: 'result', row_count: 42 })
+  })
+
+  it('ignores a trailing heartbeat with no newline', async () => {
+    const res = streamResponse(['{"type":"result","ok":true}\n', ':keepalive'])
+    const last = await readNdjsonStream(res, () => {})
+    expect(last).toEqual({ type: 'result', ok: true })
   })
 })

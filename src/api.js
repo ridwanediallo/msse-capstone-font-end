@@ -103,7 +103,10 @@ export const readNdjsonStream = async (res, onLine) => {
 
   const handleLine = (line) => {
     const text = line.trim()
-    if (!text) return
+    // Skip blank lines and SSE-style comment lines (":keepalive"), which the
+    // backend emits as streaming heartbeats to keep proxies from idle-timing
+    // out long queries. They are not JSON and must not reach JSON.parse.
+    if (!text || text.startsWith(':')) return
     const obj = JSON.parse(text)
     onLine?.(obj)
     lastLine = obj
