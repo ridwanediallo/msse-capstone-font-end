@@ -276,7 +276,17 @@ export const handlers = [
     const url = new URL(request.url)
     const dsId = url.searchParams.get('data_source_id')
     const list = dsId ? conversations.filter((c) => c.data_source_id === dsId) : conversations
-    return HttpResponse.json(list)
+    const page = Number(url.searchParams.get('page') ?? 1)
+    const perPage = Math.min(Number(url.searchParams.get('per_page') ?? 20), 100)
+    const start = (page - 1) * perPage
+    const items = list.slice(start, start + perPage)
+    return HttpResponse.json({
+      items,
+      total: list.length,
+      page,
+      per_page: perPage,
+      pages: Math.ceil(list.length / perPage),
+    })
   }),
   http.get('/api/v1/conversations/:id', () =>
     HttpResponse.json({ ...conversations[0], turns }),
