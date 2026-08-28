@@ -123,11 +123,12 @@ const useQueryStore = create((set, get) => ({
     set({ conversationsLoading: true })
     try {
       const res = await apiFetch(
-        `/conversations?data_source_id=${encodeURIComponent(selectedDatasourceId)}`
+        `/conversations?data_source_id=${encodeURIComponent(selectedDatasourceId)}&per_page=100`
       )
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`)
-      set({ conversations: data, conversationsLoading: false })
+      const items = Array.isArray(data) ? data : data.items ?? []
+      set({ conversations: items, conversationsLoading: false })
     } catch {
       set({ conversationsLoading: false })
     }
