@@ -163,8 +163,12 @@ function DatasourceWizard({ open, onClose }) {
         setSchemaData(introspectResult.data);
         setStepError(null);
       } else {
-        // Introspection failed — clean up the orphaned datasource.
-        await deleteDatasource(result.data.id);
+        // Introspection failed — best-effort cleanup of the orphaned datasource.
+        try {
+          await deleteDatasource(result.data.id);
+        } catch {
+          // Delete failed — user may need to remove it manually from the list.
+        }
         setCreatedId(null);
         setStepError(introspectResult.error);
       }
