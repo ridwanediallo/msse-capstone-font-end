@@ -30,8 +30,10 @@ function TopBar() {
   const toggleTheme = useThemeStore((s) => s.toggleTheme)
 
   useEffect(() => {
-    fetchDatasources()
-  }, [fetchDatasources])
+    if (datasources.length === 0) {
+      fetchDatasources()
+    }
+  }, [datasources.length, fetchDatasources])
 
   // Default to the first real datasource; fall back to the sample when it's
   // the only one available.

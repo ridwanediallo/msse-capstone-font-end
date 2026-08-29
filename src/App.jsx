@@ -57,23 +57,21 @@ function App() {
   return (
     <BrowserRouter>
       <ErrorBoundary>
-      <Suspense fallback={<div className="app-loading"><Spin size="large" /></div>}>
       <Routes>
-        <Route path="/invite" element={<AcceptInvitePage />} />
+        <Route path="/invite" element={<Suspense fallback={<div className="app-loading"><Spin size="large" /></div>}><AcceptInvitePage /></Suspense>} />
         <Route path="/admin" element={<AdminLayout key={authKey} />}>
           <Route index element={<Navigate to="/admin/users" replace />} />
-          <Route path="users" element={<UsersPage />} />
-          <Route path="datasources" element={<DatasourcePage />} />
-          <Route path="audit-log" element={<AuditPage />} />
+          <Route path="users" element={<Suspense fallback={<div className="app-loading"><Spin size="large" /></div>}><UsersPage /></Suspense>} />
+          <Route path="datasources" element={<Suspense fallback={<div className="app-loading"><Spin size="large" /></div>}><DatasourcePage /></Suspense>} />
+          <Route path="audit-log" element={<Suspense fallback={<div className="app-loading"><Spin size="large" /></div>}><AuditPage /></Suspense>} />
         </Route>
         <Route element={<AppShell authKey={authKey} />}>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/" element={<QueryPage />} />
+          <Route path="/login" element={<Suspense fallback={<div className="app-loading"><Spin size="large" /></div>}><LoginPage /></Suspense>} />
+          <Route path="/" element={<Suspense fallback={<div className="app-loading"><Spin size="large" /></div>}><QueryPage /></Suspense>} />
           <Route path="/datasources" element={<Navigate to="/admin/datasources" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
-      </Suspense>
       </ErrorBoundary>
     </BrowserRouter>
   )
