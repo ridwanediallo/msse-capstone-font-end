@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect } from 'react'
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom'
 import { Spin } from 'antd'
 import Sidebar from './components/Sidebar'
 import TopBar from './components/TopBar'
@@ -15,6 +15,16 @@ const AuditPage = lazy(() => import('./pages/AuditPage'))
 const AcceptInvitePage = lazy(() => import('./pages/AcceptInvitePage'))
 
 function AppShell({ authKey }) {
+  const user = useAuthStore((s) => s.user)
+  const guest = useAuthStore((s) => s.guest)
+  const location = useLocation()
+
+  // After bootstrap, if neither user nor guest exists, the session is invalid.
+  // Redirect to /login unless already there.
+  if (!user && !guest && location.pathname !== '/login') {
+    return <Navigate to="/login" replace />
+  }
+
   return (
     <div className="app-shell" key={authKey}>
       <Sidebar />

@@ -126,16 +126,20 @@ export const readNdjsonStream = async (res, onLine) => {
     lastLine = obj
   }
 
-  for (;;) {
-    const { done, value } = await reader.read()
-    if (done) break
-    buffer += decoder.decode(value, { stream: true })
-    let idx
-    while ((idx = buffer.indexOf('\n')) !== -1) {
-      handleLine(buffer.slice(0, idx))
-      buffer = buffer.slice(idx + 1)
+  try {
+    for (;;) {
+      const { done, value } = await reader.read()
+      if (done) break
+      buffer += decoder.decode(value, { stream: true })
+      let idx
+      while ((idx = buffer.indexOf('\n')) !== -1) {
+        handleLine(buffer.slice(0, idx))
+        buffer = buffer.slice(idx + 1)
+      }
     }
+    if (buffer.trim()) handleLine(buffer)
+  } finally {
+    reader.releaseLock()
   }
-  if (buffer.trim()) handleLine(buffer)
   return lastLine
 }

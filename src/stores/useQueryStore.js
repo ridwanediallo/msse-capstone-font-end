@@ -7,6 +7,10 @@ const useQueryStore = create((set, get) => ({
   loading: false,
   error: null,
 
+  // AbortController for the in-flight query — calling abort() cancels the
+  // fetch and readNdjsonStream, preventing stale writes to state.
+  _queryAbort: null,
+
   // The question whose submit last failed — Retry must resubmit THIS, not
   // the previous successful turn (a failed submit never creates a turn).
   // Persisted to sessionStorage so page reloads don't lose it.
@@ -31,11 +35,15 @@ const useQueryStore = create((set, get) => ({
   conversations: [],
   conversationsLoading: false,
 
-  submitQuery: async (question, { signal } = {}) => {
-    const { conversationId } = get()
+  submitQuery: async (question) => {
+    const { conversationId, _queryAbort } = get()
     const { selectedDatasourceId } = useDatasourceStore.getState()
 
-    set({ loading: true, error: null, stepsDone: 0 })
+    // Cancel any in-flight query before starting a new one.
+    if (_queryAbort) _queryAbort.abort()
+    const controller = new AbortController()
+    set({ loading: true, error: null, stepsDone: 0, _queryAbort: controller })
+
     try {
       const body = { question, conversation_id: conversationId }
       if (!conversationId && selectedDatasourceId) {
@@ -44,7 +52,7 @@ const useQueryStore = create((set, get) => ({
       const res = await apiFetch('/query', {
         method: 'POST',
         body: JSON.stringify(body),
-        signal,
+        signal: controller.signal,
       })
 
       if (!res.ok) {
@@ -109,14 +117,17 @@ const useQueryStore = create((set, get) => ({
         loading: false,
         stepsDone: 0,
         lastFailedQuestion: null,
+        _queryAbort: null,
       }))
       try { sessionStorage.removeItem('lastFailedQuestion') } catch {}
 
       // Refresh the recents list so a newly created session shows up
       if (isNewConversation) get().fetchConversations()
     } catch (err) {
+      // AbortError means the user started a new query — don't treat as failure.
+      if (err.name === 'AbortError') return
       try { sessionStorage.setItem('lastFailedQuestion', question) } catch {}
-      set({ error: err.message, loading: false, stepsDone: 0, lastFailedQuestion: question })
+      set({ error: err.message, loading: false, stepsDone: 0, lastFailedQuestion: question, _queryAbort: null })
     }
   },
 
@@ -212,6 +223,8 @@ const useQueryStore = create((set, get) => ({
     }),
 
   reset: () => {
+    const { _queryAbort } = get()
+    if (_queryAbort) _queryAbort.abort()
     try { sessionStorage.removeItem('lastFailedQuestion') } catch {}
     set({
       loading: false,
@@ -224,6 +237,7 @@ const useQueryStore = create((set, get) => ({
       conversations: [],
       conversationsLoading: false,
       stepsDone: 0,
+      _queryAbort: null,
     })
   },
 
