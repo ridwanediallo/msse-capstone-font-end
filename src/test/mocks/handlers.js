@@ -175,7 +175,8 @@ export const handlers = [
     const role = url.searchParams.get('role')
     const items =
       role === 'member' ? [memberUser, memberUser2] : [adminUser, memberUser, memberUser2]
-    return HttpResponse.json({ total: items.length, items })
+    const activeAdminCount = items.filter((u) => u.role === 'admin' && u.status === 'active').length
+    return HttpResponse.json({ total: items.length, items, active_admin_count: activeAdminCount })
   }),
 
   http.get('/api/v1/admin/datasources/:id/grants', () =>

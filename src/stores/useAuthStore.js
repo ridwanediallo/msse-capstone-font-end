@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { apiFetch } from '../api.js'
+import { apiFetch, setOnUnauthorized } from '../api.js'
 import useQueryStore from './useQueryStore'
 import useDatasourceStore from './useDatasourceStore'
 
@@ -31,6 +31,23 @@ const useAuthStore = create((set, get) => ({
         error: err.message,
       })
     }
+
+    // Register the global 401 handler AFTER the initial fetchMe resolves.
+    // This avoids redirecting on the expected guest-401 during first load.
+    if (!get()._401registered) {
+      setOnUnauthorized(() => {
+        const { loading: isLoading } = get()
+        if (isLoading) return // still bootstrapping — ignore
+        useQueryStore.getState().reset()
+        useDatasourceStore.getState().reset()
+        set({ user: null, isAuthenticated: false, guestQuota: null })
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login'
+        }
+      })
+      set({ _401registered: true })
+    }
+
     return get().user
   },
 

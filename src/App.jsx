@@ -1,16 +1,18 @@
-import { useEffect } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import { Spin } from 'antd'
 import Sidebar from './components/Sidebar'
 import TopBar from './components/TopBar'
 import AdminLayout from './components/AdminLayout'
-import QueryPage from './pages/QueryPage'
-import DatasourcePage from './pages/DatasourcePage'
-import LoginPage from './pages/LoginPage'
-import UsersPage from './pages/UsersPage'
-import AuditPage from './pages/AuditPage'
-import AcceptInvitePage from './pages/AcceptInvitePage'
+import ErrorBoundary from './components/ErrorBoundary'
 import useAuthStore from './stores/useAuthStore'
+
+const QueryPage = lazy(() => import('./pages/QueryPage'))
+const DatasourcePage = lazy(() => import('./pages/DatasourcePage'))
+const LoginPage = lazy(() => import('./pages/LoginPage'))
+const UsersPage = lazy(() => import('./pages/UsersPage'))
+const AuditPage = lazy(() => import('./pages/AuditPage'))
+const AcceptInvitePage = lazy(() => import('./pages/AcceptInvitePage'))
 
 function AppShell({ authKey }) {
   return (
@@ -44,6 +46,8 @@ function App() {
 
   return (
     <BrowserRouter>
+      <ErrorBoundary>
+      <Suspense fallback={<div className="app-loading"><Spin size="large" /></div>}>
       <Routes>
         <Route path="/invite" element={<AcceptInvitePage />} />
         <Route path="/admin" element={<AdminLayout key={authKey} />}>
@@ -59,6 +63,8 @@ function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
+      </Suspense>
+      </ErrorBoundary>
     </BrowserRouter>
   )
 }

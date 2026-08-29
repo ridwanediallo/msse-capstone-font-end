@@ -7,6 +7,7 @@ import {
   CheckCircleOutlined, TeamOutlined,
 } from '@ant-design/icons'
 import useDatasourceStore from '../stores/useDatasourceStore'
+import { friendlyError } from '../errors'
 import DatasourceWizard from '../components/DatasourceWizard'
 import GrantsDrawer from '../components/GrantsDrawer'
 
@@ -29,7 +30,7 @@ function DatasourcePage() {
     if (result.ok) {
       message.success('Datasource deleted')
     } else {
-      message.error(result.error)
+      message.error(friendlyError(result))
     }
   }
 
@@ -39,7 +40,7 @@ function DatasourcePage() {
       message.success(`Schema refreshed — ${result.data.length} tables`)
       fetchDatasources()
     } else {
-      message.error(result.error)
+      message.error(friendlyError(result))
     }
   }
 

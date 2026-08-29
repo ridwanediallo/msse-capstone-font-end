@@ -4,6 +4,12 @@ const CSRF_COOKIE = 'csrf_token'
 
 export const apiUrl = (path) => `${API_BASE}${API_PREFIX}${path}`
 
+// ── 401 session-expiry callback ────────────────────────────────────────────
+// Registered by the auth store after the initial fetchMe resolves. Subsequent
+// 401s trigger a redirect to /login so the user is never stuck on a stale page.
+let onUnauthorized = null
+export const setOnUnauthorized = (cb) => { onUnauthorized = cb }
+
 const readCookie = (name) => {
   const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`))
   return match ? decodeURIComponent(match[1]) : null
@@ -28,7 +34,8 @@ export const ensureCsrfToken = async (force = false) => {
     .then((res) => (res.ok ? res.json() : null))
     .then((data) => {
       if (data?.csrf_token) {
-        document.cookie = `csrf_token=${encodeURIComponent(data.csrf_token)}; path=/; samesite=lax`
+        const secure = window.location.protocol === 'https:' ? '; Secure' : ''
+        document.cookie = `csrf_token=${encodeURIComponent(data.csrf_token)}; path=/; samesite=lax${secure}`
       }
     })
     .finally(() => {
@@ -85,6 +92,13 @@ export const apiFetch = async (path, options = {}) => {
       credentials: 'include',
       headers: retryHeaders,
     })
+  }
+
+  // Global 401 handler: the session expired or the user was logged out.
+  // The callback is registered by the auth store AFTER the initial fetchMe,
+  // so the guest-401 on first load does not trigger a redirect.
+  if (res.status === 401 && onUnauthorized) {
+    onUnauthorized()
   }
 
   return res

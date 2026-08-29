@@ -9,7 +9,10 @@ const useQueryStore = create((set, get) => ({
 
   // The question whose submit last failed — Retry must resubmit THIS, not
   // the previous successful turn (a failed submit never creates a turn).
-  lastFailedQuestion: null,
+  // Persisted to sessionStorage so page reloads don't lose it.
+  lastFailedQuestion: (() => {
+    try { return sessionStorage.getItem('lastFailedQuestion') || null } catch { return null }
+  })(),
 
   // Number of pipeline steps revealed so far during an in-flight query
   // (0..5). The backend streams a progress line as each step actually
@@ -28,7 +31,7 @@ const useQueryStore = create((set, get) => ({
   conversations: [],
   conversationsLoading: false,
 
-  submitQuery: async (question) => {
+  submitQuery: async (question, { signal } = {}) => {
     const { conversationId } = get()
     const { selectedDatasourceId } = useDatasourceStore.getState()
 
@@ -41,6 +44,7 @@ const useQueryStore = create((set, get) => ({
       const res = await apiFetch('/query', {
         method: 'POST',
         body: JSON.stringify(body),
+        signal,
       })
 
       if (!res.ok) {
@@ -106,15 +110,17 @@ const useQueryStore = create((set, get) => ({
         stepsDone: 0,
         lastFailedQuestion: null,
       }))
+      try { sessionStorage.removeItem('lastFailedQuestion') } catch {}
 
       // Refresh the recents list so a newly created session shows up
       if (isNewConversation) get().fetchConversations()
     } catch (err) {
+      try { sessionStorage.setItem('lastFailedQuestion', question) } catch {}
       set({ error: err.message, loading: false, stepsDone: 0, lastFailedQuestion: question })
     }
   },
 
-  fetchConversations: async () => {
+  fetchConversations: async ({ signal } = {}) => {
     const { selectedDatasourceId } = useDatasourceStore.getState()
     if (!selectedDatasourceId) {
       set({ conversations: [], conversationsLoading: false })
@@ -123,7 +129,8 @@ const useQueryStore = create((set, get) => ({
     set({ conversationsLoading: true })
     try {
       const res = await apiFetch(
-        `/conversations?data_source_id=${encodeURIComponent(selectedDatasourceId)}&per_page=100`
+        `/conversations?data_source_id=${encodeURIComponent(selectedDatasourceId)}&per_page=100`,
+        { signal }
       )
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`)
@@ -134,10 +141,10 @@ const useQueryStore = create((set, get) => ({
     }
   },
 
-  loadConversation: async (id) => {
+  loadConversation: async (id, { signal } = {}) => {
     set({ loading: true, error: null })
     try {
-      const res = await apiFetch(`/conversations/${id}`)
+      const res = await apiFetch(`/conversations/${id}`, { signal })
       const data = await res.json()
       if (!res.ok) {
         throw new Error(data.error || `HTTP ${res.status}`)
@@ -204,7 +211,8 @@ const useQueryStore = create((set, get) => ({
       stepsDone: 0,
     }),
 
-  reset: () =>
+  reset: () => {
+    try { sessionStorage.removeItem('lastFailedQuestion') } catch {}
     set({
       loading: false,
       error: null,
@@ -216,7 +224,8 @@ const useQueryStore = create((set, get) => ({
       conversations: [],
       conversationsLoading: false,
       stepsDone: 0,
-    }),
+    })
+  },
 
   fetchSuggestions: async (dsId) => {
     if (!dsId) {
