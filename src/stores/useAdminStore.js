@@ -41,6 +41,7 @@ const useAdminStore = create((set, get) => ({
       usersError: null,
       query: '',
       page: 1,
+      activeAdminCount: 0,
       auditLogs: [],
       auditTotal: 0,
       auditLoading: false,
