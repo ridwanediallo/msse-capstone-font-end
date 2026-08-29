@@ -70,6 +70,15 @@ function LoginPage() {
           </Button>
 
           <Button
+            type="link"
+            block
+            onClick={() => navigate('/forgot-password')}
+            style={{ marginTop: 8 }}
+          >
+            Forgot password?
+          </Button>
+
+          <Button
             type="text"
             block
             icon={<ArrowLeftOutlined />}

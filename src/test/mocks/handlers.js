@@ -169,6 +169,18 @@ export const handlers = [
     return HttpResponse.json({ user: memberUser })
   }),
   http.post('/api/v1/auth/logout', () => HttpResponse.json({ ok: true })),
+  http.post('/api/v1/auth/claim-guest', () => HttpResponse.json({ migrated: 0 })),
+  http.post('/api/v1/auth/forgot-password', async ({ request }) => {
+    const body = await request.json()
+    return HttpResponse.json({ message: 'If an account exists, a reset link has been sent.', token: 'test-reset-token' })
+  }),
+  http.post('/api/v1/auth/reset-password', async ({ request }) => {
+    const body = await request.json()
+    if (!body.token || !body.new_password) {
+      return HttpResponse.json({ error: 'Token and new password are required', code: 'missing_fields' }, { status: 400 })
+    }
+    return HttpResponse.json({ message: 'Password has been reset. Please sign in.' })
+  }),
 
   http.get('/api/v1/admin/users', ({ request }) => {
     const url = new URL(request.url)
