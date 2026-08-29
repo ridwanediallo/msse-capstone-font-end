@@ -122,7 +122,7 @@ const useQueryStore = create((set, get) => ({
       try { sessionStorage.removeItem('lastFailedQuestion') } catch {}
 
       // Refresh the recents list so a newly created session shows up
-      if (isNewConversation) get().fetchConversations()
+      if (isNewConversation) get().fetchConversations({ force: true })
     } catch (err) {
       // AbortError means the user started a new query — don't treat as failure.
       if (err.name === 'AbortError') return
@@ -131,12 +131,20 @@ const useQueryStore = create((set, get) => ({
     }
   },
 
-  fetchConversations: async ({ signal } = {}) => {
+  // Timestamp of last successful fetchConversations call (ms). Used to skip
+  // redundant fetches when Sidebar and TopBar both trigger on mount/switch.
+  _conversationsFetchedAt: 0,
+
+  fetchConversations: async ({ signal, force = false } = {}) => {
     const { selectedDatasourceId } = useDatasourceStore.getState()
     if (!selectedDatasourceId) {
       set({ conversations: [], conversationsLoading: false })
       return
     }
+    // Skip if fetched within the last 5 seconds (unless forced).
+    const { _conversationsFetchedAt } = get()
+    if (!force && Date.now() - _conversationsFetchedAt < 5000) return
+
     set({ conversationsLoading: true })
     try {
       const res = await apiFetch(
@@ -146,7 +154,7 @@ const useQueryStore = create((set, get) => ({
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`)
       const items = Array.isArray(data) ? data : data.items ?? []
-      set({ conversations: items, conversationsLoading: false })
+      set({ conversations: items, conversationsLoading: false, _conversationsFetchedAt: Date.now() })
     } catch {
       set({ conversationsLoading: false })
     }
@@ -236,6 +244,7 @@ const useQueryStore = create((set, get) => ({
       suggestionsLoading: false,
       conversations: [],
       conversationsLoading: false,
+      _conversationsFetchedAt: 0,
       stepsDone: 0,
       _queryAbort: null,
     })

@@ -1,3 +1,4 @@
+import { Spin } from 'antd'
 import { Navigate, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import {
   ArrowLeftOutlined,
@@ -17,6 +18,11 @@ const NAV_ITEMS = [
 function AdminLayout() {
   const navigate = useNavigate()
   const user = useAuthStore((s) => s.user)
+  const loading = useAuthStore((s) => s.loading)
+
+  if (loading) {
+    return <div className="app-loading"><Spin size="large" /></div>
+  }
 
   if (!user || user.role !== 'admin') {
     return <Navigate to="/" replace />
