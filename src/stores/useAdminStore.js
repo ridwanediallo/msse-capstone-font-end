@@ -18,6 +18,7 @@ const useAdminStore = create((set, get) => ({
   usersError: null,
   query: '',
   page: 1,
+  activeAdminCount: 0,
 
   auditLogs: [],
   auditTotal: 0,
@@ -25,6 +26,7 @@ const useAdminStore = create((set, get) => ({
   auditError: null,
 
   members: [],
+  membersTotal: 0,
   membersLoading: false,
   membersError: null,
   grants: [],
@@ -39,11 +41,13 @@ const useAdminStore = create((set, get) => ({
       usersError: null,
       query: '',
       page: 1,
+      activeAdminCount: 0,
       auditLogs: [],
       auditTotal: 0,
       auditLoading: false,
       auditError: null,
       members: [],
+      membersTotal: 0,
       membersLoading: false,
       membersError: null,
       grants: [],
@@ -51,17 +55,18 @@ const useAdminStore = create((set, get) => ({
       grantsError: null,
     }),
 
-  // Members for datasource-grant pickers: role-filtered, capped at the
-  // backend's max page size so emails can be resolved client-side too.
-  // NOTE: with >200 members this quietly omits people from the picker —
-  // needs a searchable/paginated picker (tracked in FIX_PLAN #17 follow-ups).
-  fetchMembers: async () => {
+  // Members for datasource-grant pickers: role-filtered, with optional
+  // server-side search. Falls back to client-side filtering via Select's
+  // built-in search when no query is provided.
+  fetchMembers: async (query = '') => {
     set({ membersLoading: true, membersError: null })
     try {
-      const res = await apiFetch('/admin/users?role=member&limit=200')
+      const params = new URLSearchParams({ role: 'member', limit: '200' })
+      if (query) params.set('q', query)
+      const res = await apiFetch(`/admin/users?${params}`)
       const data = await res.json()
       if (!res.ok) throw apiError(data)
-      set({ members: data.items, membersLoading: false })
+      set({ members: data.items, membersTotal: data.total, membersLoading: false })
     } catch (err) {
       set({ membersError: err.message, membersLoading: false })
     }
@@ -109,17 +114,17 @@ const useAdminStore = create((set, get) => ({
   },
 
   fetchUsers: async (overrides = {}) => {
-    const { query, page } = { query: get().query, page: get().page, ...overrides }
+    const { query, page, signal } = { query: get().query, page: get().page, ...overrides }
     set({ usersLoading: true, usersError: null, query, page })
     try {
       const params = new URLSearchParams()
       if (query) params.set('q', query)
       params.set('limit', String(ADMIN_PAGE_SIZE))
       params.set('offset', String((page - 1) * ADMIN_PAGE_SIZE))
-      const res = await apiFetch(`/admin/users?${params}`)
+      const res = await apiFetch(`/admin/users?${params}`, { signal })
       const data = await res.json()
       if (!res.ok) throw apiError(data)
-      set({ users: data.items, usersTotal: data.total, usersLoading: false })
+      set({ users: data.items, usersTotal: data.total, activeAdminCount: data.active_admin_count ?? 0, usersLoading: false })
     } catch (err) {
       set({ usersError: err.message, usersLoading: false })
     }

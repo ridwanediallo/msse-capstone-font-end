@@ -73,7 +73,10 @@ function AcceptInvitePage() {
             name="password"
             rules={[
               { required: true, message: 'Choose a password' },
-              { min: 8, message: 'Password must be at least 8 characters' },
+              { min: 8, message: 'At least 8 characters' },
+              { pattern: /[A-Z]/, message: 'Must contain an uppercase letter' },
+              { pattern: /[a-z]/, message: 'Must contain a lowercase letter' },
+              { pattern: /[0-9]/, message: 'Must contain a digit' },
             ]}
           >
             <Input.Password

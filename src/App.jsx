@@ -1,23 +1,40 @@
-import { useEffect } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
-import { Spin } from 'antd'
+import { Spin, Alert } from 'antd'
 import Sidebar from './components/Sidebar'
 import TopBar from './components/TopBar'
 import AdminLayout from './components/AdminLayout'
-import QueryPage from './pages/QueryPage'
-import DatasourcePage from './pages/DatasourcePage'
-import LoginPage from './pages/LoginPage'
-import UsersPage from './pages/UsersPage'
-import AuditPage from './pages/AuditPage'
-import AcceptInvitePage from './pages/AcceptInvitePage'
+import ErrorBoundary from './components/ErrorBoundary'
 import useAuthStore from './stores/useAuthStore'
 
+const QueryPage = lazy(() => import('./pages/QueryPage'))
+const DatasourcePage = lazy(() => import('./pages/DatasourcePage'))
+const LoginPage = lazy(() => import('./pages/LoginPage'))
+const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'))
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'))
+const UsersPage = lazy(() => import('./pages/UsersPage'))
+const AuditPage = lazy(() => import('./pages/AuditPage'))
+const AcceptInvitePage = lazy(() => import('./pages/AcceptInvitePage'))
+
 function AppShell({ authKey }) {
+  const migratedCount = useAuthStore((s) => s.migratedCount)
+  const clearMigratedCount = () => useAuthStore.setState({ migratedCount: null })
+
   return (
     <div className="app-shell" key={authKey}>
       <Sidebar />
       <div className="app-main">
         <TopBar />
+        {migratedCount !== null && (
+          <Alert
+            type="success"
+            message={`We found ${migratedCount} conversation${migratedCount === 1 ? '' : 's'} from your guest session and added them to your account.`}
+            banner
+            closable
+            onClose={clearMigratedCount}
+            style={{ marginBottom: 0 }}
+          />
+        )}
         <Outlet />
       </div>
     </div>
@@ -44,21 +61,25 @@ function App() {
 
   return (
     <BrowserRouter>
+      <ErrorBoundary>
       <Routes>
-        <Route path="/invite" element={<AcceptInvitePage />} />
+        <Route path="/invite" element={<Suspense fallback={<div className="app-loading"><Spin size="large" /></div>}><AcceptInvitePage /></Suspense>} />
+        <Route path="/forgot-password" element={<Suspense fallback={<div className="app-loading"><Spin size="large" /></div>}><ForgotPasswordPage /></Suspense>} />
+        <Route path="/reset-password" element={<Suspense fallback={<div className="app-loading"><Spin size="large" /></div>}><ResetPasswordPage /></Suspense>} />
         <Route path="/admin" element={<AdminLayout key={authKey} />}>
           <Route index element={<Navigate to="/admin/users" replace />} />
-          <Route path="users" element={<UsersPage />} />
-          <Route path="datasources" element={<DatasourcePage />} />
-          <Route path="audit-log" element={<AuditPage />} />
+          <Route path="users" element={<Suspense fallback={<div className="app-loading"><Spin size="large" /></div>}><UsersPage /></Suspense>} />
+          <Route path="datasources" element={<Suspense fallback={<div className="app-loading"><Spin size="large" /></div>}><DatasourcePage /></Suspense>} />
+          <Route path="audit-log" element={<Suspense fallback={<div className="app-loading"><Spin size="large" /></div>}><AuditPage /></Suspense>} />
         </Route>
         <Route element={<AppShell authKey={authKey} />}>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/" element={<QueryPage />} />
+          <Route path="/login" element={<Suspense fallback={<div className="app-loading"><Spin size="large" /></div>}><LoginPage /></Suspense>} />
+          <Route path="/" element={<Suspense fallback={<div className="app-loading"><Spin size="large" /></div>}><QueryPage /></Suspense>} />
           <Route path="/datasources" element={<Navigate to="/admin/datasources" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
+      </ErrorBoundary>
     </BrowserRouter>
   )
 }

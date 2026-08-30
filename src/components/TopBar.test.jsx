@@ -5,6 +5,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { http, HttpResponse } from 'msw'
 import { server } from '../test/mocks/server'
 import TopBar from './TopBar'
+import useQueryStore from '../stores/useQueryStore'
 import useDatasourceStore from '../stores/useDatasourceStore'
 import useAuthStore from '../stores/useAuthStore'
 import useThemeStore from '../stores/useThemeStore'
@@ -18,6 +19,7 @@ const renderTopBar = () =>
 
 describe('TopBar', () => {
   beforeEach(() => {
+    useQueryStore.getState().reset()
     useDatasourceStore.setState({
       datasources: [],
       selectedDatasourceId: null,

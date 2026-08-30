@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Button, Form, Input, Modal, Select, message } from 'antd'
 import { MailOutlined } from '@ant-design/icons'
 import useAdminStore from '../stores/useAdminStore'
+import { friendlyError } from '../errors'
 import InviteLink from './InviteLink'
 
 function InviteUserModal({ open, onClose }) {
@@ -25,7 +26,7 @@ function InviteUserModal({ open, onClose }) {
     const result = await inviteUser({ email, name: name || undefined, role })
     setSubmitting(false)
     if (!result.ok) {
-      message.error(result.error)
+      message.error(friendlyError(result))
       return
     }
     setInviteResult(result.data)

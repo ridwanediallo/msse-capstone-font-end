@@ -12,6 +12,7 @@ const resetStore = () => {
     turns: [],
     conversations: [],
     conversationsLoading: false,
+    _conversationsFetchedAt: 0,
     stepsDone: 0,
   })
 }

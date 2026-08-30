@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { lazy, Suspense, useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Table, Button, Alert, Tooltip, message, Tag } from 'antd'
 import {
@@ -11,13 +11,10 @@ import { format } from 'sql-formatter'
 import hljs from 'highlight.js/lib/core'
 import postgresql from 'highlight.js/lib/languages/sql'
 import 'highlight.js/styles/github.css'
-import * as html2canvas from 'html2canvas'
-import jsPDF from 'jspdf'
-import * as XLSX from 'xlsx'
 import useQueryStore from '../stores/useQueryStore'
 import useDatasourceStore from '../stores/useDatasourceStore'
 import useAuthStore from '../stores/useAuthStore'
-import ChartSpec from '../components/ChartSpec'
+const ChartSpec = lazy(() => import('../components/ChartSpec'))
 import KpiCard from '../components/KpiCard'
 
 hljs.registerLanguage('postgresql', postgresql)
@@ -160,28 +157,78 @@ function ReportPanel({ turn }) {
   const handleExportPDF = async () => {
     if (!reportRef.current) return
     try {
-      const canvas = await html2canvas.default(reportRef.current, { scale: 2 })
+      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+        import('html2canvas'),
+        import('jspdf'),
+      ])
+      const canvas = await html2canvas(reportRef.current, { scale: 2 })
       const imgData = canvas.toDataURL('image/png')
       const pdf = new jsPDF('p', 'mm', 'a4')
       const pdfWidth = pdf.internal.pageSize.getWidth()
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight)
+      const pdfHeight = pdf.internal.pageSize.getHeight()
+      const imgWidth = pdfWidth
+      const imgHeight = (canvas.height * pdfWidth) / canvas.width
+
+      // If the image fits on one page, add it directly.
+      if (imgHeight <= pdfHeight) {
+        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight)
+      } else {
+        // Split across multiple pages. Each page gets a slice of the canvas.
+        let yOffset = 0
+        const sliceHeightPx = (pdfHeight / imgHeight) * canvas.height
+        while (yOffset < canvas.height) {
+          if (yOffset > 0) pdf.addPage()
+          // Create a slice of the canvas for this page
+          const sliceCanvas = document.createElement('canvas')
+          sliceCanvas.width = canvas.width
+          sliceCanvas.height = Math.min(sliceHeightPx, canvas.height - yOffset)
+          const ctx = sliceCanvas.getContext('2d')
+          ctx.drawImage(
+            canvas,
+            0, yOffset, canvas.width, sliceCanvas.height,
+            0, 0, canvas.width, sliceCanvas.height,
+          )
+          const sliceData = sliceCanvas.toDataURL('image/png')
+          const sliceImgHeight = (sliceCanvas.height * pdfWidth) / canvas.width
+          pdf.addImage(sliceData, 'PNG', 0, 0, pdfWidth, sliceImgHeight)
+          yOffset += sliceHeightPx
+        }
+      }
       pdf.save('query-report.pdf')
     } catch {
       message.error('PDF export failed')
     }
   }
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     if (!turn.rows || turn.rows.length === 0) return
-    const ws = XLSX.utils.json_to_sheet(turn.rows)
-    const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, 'Results')
-    XLSX.writeFile(wb, 'query-results.xlsx')
+    try {
+      const { Workbook } = await import('exceljs')
+      const wb = new Workbook()
+      const ws = wb.addWorksheet('Results')
+      if (turn.rows.length > 0) {
+        ws.columns = Object.keys(turn.rows[0]).map((key) => ({ header: key, key }))
+        turn.rows.forEach((row) => ws.addRow(row))
+      }
+      const buf = await wb.xlsx.writeBuffer()
+      const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'query-results.xlsx'
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      message.error('Excel export failed')
+    }
   }
 
   const renderChart = () => {
-    return <ChartSpec spec={turn.chartSpec} rows={turn.rows} />
+    return (
+      <Suspense fallback={<div style={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading chart…</div>}>
+        <ChartSpec spec={turn.chartSpec} rows={turn.rows} />
+      </Suspense>
+    )
   }
 
   const pipelineSteps = turn.noQuery

@@ -7,9 +7,16 @@ const useQueryStore = create((set, get) => ({
   loading: false,
   error: null,
 
+  // AbortController for the in-flight query — calling abort() cancels the
+  // fetch and readNdjsonStream, preventing stale writes to state.
+  _queryAbort: null,
+
   // The question whose submit last failed — Retry must resubmit THIS, not
   // the previous successful turn (a failed submit never creates a turn).
-  lastFailedQuestion: null,
+  // Persisted to sessionStorage so page reloads don't lose it.
+  lastFailedQuestion: (() => {
+    try { return sessionStorage.getItem('lastFailedQuestion') || null } catch { return null }
+  })(),
 
   // Number of pipeline steps revealed so far during an in-flight query
   // (0..5). The backend streams a progress line as each step actually
@@ -29,10 +36,14 @@ const useQueryStore = create((set, get) => ({
   conversationsLoading: false,
 
   submitQuery: async (question) => {
-    const { conversationId } = get()
+    const { conversationId, _queryAbort } = get()
     const { selectedDatasourceId } = useDatasourceStore.getState()
 
-    set({ loading: true, error: null, stepsDone: 0 })
+    // Cancel any in-flight query before starting a new one.
+    if (_queryAbort) _queryAbort.abort()
+    const controller = new AbortController()
+    set({ loading: true, error: null, stepsDone: 0, _queryAbort: controller })
+
     try {
       const body = { question, conversation_id: conversationId }
       if (!conversationId && selectedDatasourceId) {
@@ -41,6 +52,7 @@ const useQueryStore = create((set, get) => ({
       const res = await apiFetch('/query', {
         method: 'POST',
         body: JSON.stringify(body),
+        signal: controller.signal,
       })
 
       if (!res.ok) {
@@ -95,6 +107,9 @@ const useQueryStore = create((set, get) => ({
         executionTime: data.execution_time,
         noQuery: data.no_query || false,
         questionResolved: data.question_resolved || null,
+        promptTokens: data.prompt_tokens || 0,
+        completionTokens: data.completion_tokens || 0,
+        totalTokens: data.total_tokens || 0,
       }
 
       const isNewConversation = !conversationId
@@ -105,39 +120,53 @@ const useQueryStore = create((set, get) => ({
         loading: false,
         stepsDone: 0,
         lastFailedQuestion: null,
+        _queryAbort: null,
       }))
+      try { sessionStorage.removeItem('lastFailedQuestion') } catch {}
 
       // Refresh the recents list so a newly created session shows up
-      if (isNewConversation) get().fetchConversations()
+      if (isNewConversation) get().fetchConversations({ force: true })
     } catch (err) {
-      set({ error: err.message, loading: false, stepsDone: 0, lastFailedQuestion: question })
+      // AbortError means the user started a new query — don't treat as failure.
+      if (err.name === 'AbortError') return
+      try { sessionStorage.setItem('lastFailedQuestion', question) } catch {}
+      set({ error: err.message, loading: false, stepsDone: 0, lastFailedQuestion: question, _queryAbort: null })
     }
   },
 
-  fetchConversations: async () => {
+  // Timestamp of last successful fetchConversations call (ms). Used to skip
+  // redundant fetches when Sidebar and TopBar both trigger on mount/switch.
+  _conversationsFetchedAt: 0,
+
+  fetchConversations: async ({ signal, force = false } = {}) => {
     const { selectedDatasourceId } = useDatasourceStore.getState()
     if (!selectedDatasourceId) {
       set({ conversations: [], conversationsLoading: false })
       return
     }
+    // Skip if fetched within the last 5 seconds (unless forced).
+    const { _conversationsFetchedAt } = get()
+    if (!force && Date.now() - _conversationsFetchedAt < 5000) return
+
     set({ conversationsLoading: true })
     try {
       const res = await apiFetch(
-        `/conversations?data_source_id=${encodeURIComponent(selectedDatasourceId)}&per_page=100`
+        `/conversations?data_source_id=${encodeURIComponent(selectedDatasourceId)}&per_page=100`,
+        { signal }
       )
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`)
       const items = Array.isArray(data) ? data : data.items ?? []
-      set({ conversations: items, conversationsLoading: false })
+      set({ conversations: items, conversationsLoading: false, _conversationsFetchedAt: Date.now() })
     } catch {
       set({ conversationsLoading: false })
     }
   },
 
-  loadConversation: async (id) => {
+  loadConversation: async (id, { signal } = {}) => {
     set({ loading: true, error: null })
     try {
-      const res = await apiFetch(`/conversations/${id}`)
+      const res = await apiFetch(`/conversations/${id}`, { signal })
       const data = await res.json()
       if (!res.ok) {
         throw new Error(data.error || `HTTP ${res.status}`)
@@ -204,7 +233,10 @@ const useQueryStore = create((set, get) => ({
       stepsDone: 0,
     }),
 
-  reset: () =>
+  reset: () => {
+    const { _queryAbort } = get()
+    if (_queryAbort) _queryAbort.abort()
+    try { sessionStorage.removeItem('lastFailedQuestion') } catch {}
     set({
       loading: false,
       error: null,
@@ -215,8 +247,11 @@ const useQueryStore = create((set, get) => ({
       suggestionsLoading: false,
       conversations: [],
       conversationsLoading: false,
+      _conversationsFetchedAt: 0,
       stepsDone: 0,
-    }),
+      _queryAbort: null,
+    })
+  },
 
   fetchSuggestions: async (dsId) => {
     if (!dsId) {

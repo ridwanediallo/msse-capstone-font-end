@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { apiFetch } from '../api.js'
+import { apiFetch, setOnUnauthorized } from '../api.js'
 import useQueryStore from './useQueryStore'
 import useDatasourceStore from './useDatasourceStore'
 
@@ -9,6 +9,7 @@ const useAuthStore = create((set, get) => ({
   guestQuota: null,
   loading: true,
   error: null,
+  migratedCount: null,
 
   fetchMe: async () => {
     try {
@@ -31,6 +32,23 @@ const useAuthStore = create((set, get) => ({
         error: err.message,
       })
     }
+
+    // Register the global 401 handler AFTER the initial fetchMe resolves.
+    // This avoids redirecting on the expected guest-401 during first load.
+    if (!get()._401registered) {
+      setOnUnauthorized(() => {
+        const { loading: isLoading } = get()
+        if (isLoading) return // still bootstrapping — ignore
+        useQueryStore.getState().reset()
+        useDatasourceStore.getState().reset()
+        set({ user: null, isAuthenticated: false, guestQuota: null })
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login'
+        }
+      })
+      set({ _401registered: true })
+    }
+
     return get().user
   },
 
@@ -51,7 +69,11 @@ const useAuthStore = create((set, get) => ({
         guestQuota: null,
         loading: false,
       })
-      return { ok: true }
+      // Attempt to migrate guest conversations (best-effort, non-blocking).
+      const claim = await get().claimGuest()
+      const migrated = claim.ok ? claim.migrated : 0
+      if (migrated > 0) set({ migratedCount: migrated })
+      return { ok: true, migrated }
     } catch (err) {
       set({ error: err.message })
       return { ok: false, error: err.message }
@@ -67,6 +89,16 @@ const useAuthStore = create((set, get) => ({
     useQueryStore.getState().reset()
     useDatasourceStore.getState().reset()
     set({ user: null, isAuthenticated: false, guestQuota: null })
+  },
+
+  claimGuest: async () => {
+    try {
+      const res = await apiFetch('/auth/claim-guest', { method: 'POST' })
+      const data = await res.json()
+      return { ok: true, migrated: data.migrated || 0 }
+    } catch (err) {
+      return { ok: false, error: err.message }
+    }
   },
 
   setGuestQuota: (quota) => set({ guestQuota: quota }),

@@ -29,3 +29,4 @@ query-results.xlsx
 *.njsproj
 *.sln
 *.sw?
+test-results/

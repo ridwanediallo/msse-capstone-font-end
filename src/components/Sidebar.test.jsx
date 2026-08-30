@@ -30,6 +30,7 @@ const renderSidebar = (initialEntry = '/') =>
 
 describe('Sidebar', () => {
   beforeEach(() => {
+    useQueryStore.getState().reset()
     useDatasourceStore.getState().selectDatasource('ds-1')
   })
 
@@ -70,6 +71,7 @@ describe('Sidebar', () => {
       await screen.findByText('How many students are in each major?'),
     ).toBeInTheDocument()
 
+    useQueryStore.getState().reset()
     useDatasourceStore.getState().selectDatasource('ds-2')
 
     expect(

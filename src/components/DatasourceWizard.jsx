@@ -40,6 +40,7 @@ function DatasourceWizard({ open, onClose }) {
     testConnection,
     createDatasource,
     introspectSchema,
+    deleteDatasource,
     fetchDatasources,
     updateSchemaEntry,
   } = useDatasourceStore();
@@ -162,6 +163,13 @@ function DatasourceWizard({ open, onClose }) {
         setSchemaData(introspectResult.data);
         setStepError(null);
       } else {
+        // Introspection failed — best-effort cleanup of the orphaned datasource.
+        try {
+          await deleteDatasource(result.data.id);
+        } catch {
+          // Delete failed — user may need to remove it manually from the list.
+        }
+        setCreatedId(null);
         setStepError(introspectResult.error);
       }
     } else {

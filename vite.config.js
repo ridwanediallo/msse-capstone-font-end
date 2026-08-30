@@ -16,10 +16,12 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test/setup.js'],
+    include: ['src/**/*.{test,spec}.{js,jsx,ts,tsx}'],
+    exclude: ['e2e/**', 'node_modules/**', '.opencode/**'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],
-      include: ['src/stores/**', 'src/components/**'],
+      include: ['src/stores/**', 'src/components/**', 'src/pages/**', 'src/api.js', 'src/errors.js'],
       exclude: ['src/test/**'],
     },
   },

@@ -4,6 +4,8 @@ import { http, HttpResponse } from 'msw'
 import { server } from './test/mocks/server'
 import App from './App'
 import useAuthStore from './stores/useAuthStore'
+import useQueryStore from './stores/useQueryStore'
+import useDatasourceStore from './stores/useDatasourceStore'
 
 vi.mock('./components/ChartSpec', () => ({ default: () => null }))
 
@@ -25,6 +27,8 @@ const renderAt = (path) => {
 describe('App admin route guard', () => {
   beforeEach(() => {
     window.HTMLElement.prototype.scrollIntoView = function () {}
+    useQueryStore.getState().reset()
+    useDatasourceStore.getState().reset()
     useAuthStore.setState({
       user: null,
       isAuthenticated: false,
@@ -72,10 +76,19 @@ describe('App admin route guard', () => {
       updated_at: '2026-08-01T00:00:00Z',
       data_source_id: 'ds-1',
     }
+    const guestUser = {
+      id: 'g-1',
+      email: 'guest@queryable.local',
+      name: 'Guest',
+      role: 'guest',
+      is_active: true,
+      created_at: '2026-07-01T00:00:00Z',
+      last_login_at: null,
+    }
     let signedIn = false
     server.use(
       http.get('/api/v1/auth/me', () =>
-        HttpResponse.json({ is_authenticated: false, user: null }),
+        HttpResponse.json({ is_authenticated: false, user: guestUser }),
       ),
       http.get('/api/v1/conversations', () =>
         HttpResponse.json(signedIn ? [adminConv] : []),
@@ -88,7 +101,7 @@ describe('App admin route guard', () => {
     renderAt('/')
     expect(await screen.findByText('No sessions yet')).toBeInTheDocument()
 
-    await useAuthStore.getState().login('member@queryable.local', 'pw')
+    await useAuthStore.getState().login('member@queryable.local', 'Longenough1')
 
     expect(
       await screen.findByText('Admin revenue report'),
@@ -105,6 +118,9 @@ describe('App admin route guard', () => {
     }
     let signedOut = false
     server.use(
+      http.get('/api/v1/auth/me', () =>
+        HttpResponse.json({ is_authenticated: !signedOut, user: signedOut ? null : memberUser }),
+      ),
       http.get('/api/v1/conversations', () =>
         HttpResponse.json(signedOut ? [] : [adminConv]),
       ),

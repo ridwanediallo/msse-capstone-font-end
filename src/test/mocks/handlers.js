@@ -8,6 +8,8 @@ const adminUser = {
   is_active: true,
   created_at: '2026-07-01T00:00:00Z',
   last_login_at: '2026-08-01T00:00:00Z',
+  turn_count: 12,
+  total_tokens: 4800,
 }
 
 const memberUser = {
@@ -18,6 +20,8 @@ const memberUser = {
   is_active: true,
   created_at: '2026-07-01T00:00:00Z',
   last_login_at: null,
+  turn_count: 5,
+  total_tokens: 2000,
 }
 
 const memberUser2 = {
@@ -28,6 +32,8 @@ const memberUser2 = {
   is_active: true,
   created_at: '2026-07-02T00:00:00Z',
   last_login_at: null,
+  turn_count: 0,
+  total_tokens: 0,
 }
 
 const datasources = [
@@ -169,13 +175,26 @@ export const handlers = [
     return HttpResponse.json({ user: memberUser })
   }),
   http.post('/api/v1/auth/logout', () => HttpResponse.json({ ok: true })),
+  http.post('/api/v1/auth/claim-guest', () => HttpResponse.json({ migrated: 0 })),
+  http.post('/api/v1/auth/forgot-password', async ({ request }) => {
+    const body = await request.json()
+    return HttpResponse.json({ message: 'If an account exists, a reset link has been sent.', token: 'test-reset-token' })
+  }),
+  http.post('/api/v1/auth/reset-password', async ({ request }) => {
+    const body = await request.json()
+    if (!body.token || !body.new_password) {
+      return HttpResponse.json({ error: 'Token and new password are required', code: 'missing_fields' }, { status: 400 })
+    }
+    return HttpResponse.json({ message: 'Password has been reset. Please sign in.' })
+  }),
 
   http.get('/api/v1/admin/users', ({ request }) => {
     const url = new URL(request.url)
     const role = url.searchParams.get('role')
     const items =
       role === 'member' ? [memberUser, memberUser2] : [adminUser, memberUser, memberUser2]
-    return HttpResponse.json({ total: items.length, items })
+    const activeAdminCount = items.filter((u) => u.role === 'admin' && u.status === 'active').length
+    return HttpResponse.json({ total: items.length, items, active_admin_count: activeAdminCount })
   }),
 
   http.get('/api/v1/admin/datasources/:id/grants', () =>

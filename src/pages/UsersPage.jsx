@@ -1,4 +1,4 @@
-import { useDeferredValue, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Button,
@@ -18,6 +18,7 @@ import InviteLink from '../components/InviteLink'
 import UserDetailDrawer from '../components/UserDetailDrawer'
 import { confirmDeactivate, confirmRevokeSession } from '../components/adminActions'
 import { initials } from '../initials'
+import { friendlyError } from '../errors'
 import { relativeTime } from '../lib/relativeTime'
 
 const { Title, Text } = Typography
@@ -49,37 +50,35 @@ function RoleTag({ role }) {
 function UsersPage() {
   const currentUser = useAuthStore((s) => s.user)
   const {
-    users, usersTotal, usersLoading,
+    users, usersTotal, usersLoading, activeAdminCount,
     page,
     fetchUsers, updateUser, revokeSessions, regenerateInvite, cancelInvite,
   } = useAdminStore()
 
   const [search, setSearch] = useState('')
-  const deferredSearch = useDeferredValue(search)
   const [inviteOpen, setInviteOpen] = useState(false)
   const [selectedId, setSelectedId] = useState(null)
 
-  // Fires on mount and whenever the deferred search text settles.
+  // Debounce search: wait 300ms after the user stops typing before fetching.
+  const debounceRef = useRef(null)
   useEffect(() => {
-    fetchUsers({ query: deferredSearch.trim(), page: 1 })
+    clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      fetchUsers({ query: search.trim(), page: 1 })
+    }, 300)
+    return () => clearTimeout(debounceRef.current)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [deferredSearch])
+  }, [search])
 
-  const allLoaded = usersTotal === users.length
-  const activeAdminCount = useMemo(
-    () => users.filter((u) => u.role === 'admin' && u.status === 'active').length,
-    [users],
-  )
   const isLastAdmin = (user) =>
-    allLoaded &&
     user.role === 'admin' &&
     user.status === 'active' &&
-    activeAdminCount === 1
+    activeAdminCount <= 1
 
   const handleResend = async (user) => {
     const result = await regenerateInvite(user.id)
     if (!result.ok) {
-      message.error(result.error)
+      message.error(friendlyError(result))
       return
     }
     Modal.info({
@@ -102,7 +101,7 @@ function UsersPage() {
         if (result.ok) {
           message.success('Invite revoked')
         } else {
-          message.error(result.error)
+          message.error(friendlyError(result))
         }
       },
     })
@@ -143,10 +142,16 @@ function UsersPage() {
             label: 'Reactivate account',
             onClick: async () => {
               const result = await updateUser(user.id, { is_active: true })
-              if (!result.ok) message.error(result.error)
+              if (!result.ok) message.error(friendlyError(result))
             },
           },
     ]
+  }
+
+  const formatTokens = (n) => {
+    if (!n) return '0'
+    if (n >= 1000) return `${(n / 1000).toFixed(1)}k`
+    return String(n)
   }
 
   const columns = [
@@ -176,6 +181,20 @@ function UsersPage() {
       key: 'status',
       width: 150,
       render: (status) => <StatusBadge status={status} />,
+    },
+    {
+      title: 'Queries',
+      dataIndex: 'turn_count',
+      key: 'turn_count',
+      width: 80,
+      render: (value) => <Text>{value || 0}</Text>,
+    },
+    {
+      title: 'Tokens',
+      dataIndex: 'total_tokens',
+      key: 'total_tokens',
+      width: 90,
+      render: (value) => <Text type="secondary">{formatTokens(value)}</Text>,
     },
     {
       title: 'Last login',

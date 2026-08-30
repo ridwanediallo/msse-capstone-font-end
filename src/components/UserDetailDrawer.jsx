@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button, Drawer, Modal, Select, Tooltip, Typography, message } from 'antd'
 import useAdminStore from '../stores/useAdminStore'
+import { friendlyError } from '../errors'
 import useAuthStore from '../stores/useAuthStore'
 import { apiFetch } from '../api.js'
 import { initials } from '../initials'
@@ -47,7 +48,7 @@ function UserDetailDrawer({ user, open, onClose, isLastAdmin }) {
     const payload = confirm ? { role, confirm: true } : { role }
     const result = await updateUser(user.id, payload)
     if (!result.ok) {
-      message.error(result.error)
+      message.error(friendlyError(result))
     }
     setPendingRole(null)
   }
@@ -72,7 +73,7 @@ function UserDetailDrawer({ user, open, onClose, isLastAdmin }) {
       return
     }
     updateUser(user.id, { is_active: true }).then((result) => {
-      if (!result.ok) message.error(result.error)
+      if (!result.ok) message.error(friendlyError(result))
     })
   }
 

@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Button, Drawer, Empty, Popconfirm, Select, Typography, message } from 'antd'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Button, Divider, Drawer, Empty, Popconfirm, Select, Typography, message } from 'antd'
 import { DeleteOutlined, UserAddOutlined } from '@ant-design/icons'
 import useAdminStore from '../stores/useAdminStore'
 import { friendlyError } from '../errors'
@@ -9,21 +9,34 @@ const { Text } = Typography
 
 function GrantsDrawer({ datasource, open, onClose }) {
   const {
-    members, membersLoading, fetchMembers,
+    members, membersTotal, membersLoading, fetchMembers,
     grants, grantsLoading, grantsError, fetchGrants,
     grantDatasource, revokeGrant,
   } = useAdminStore()
   const [selectedUserId, setSelectedUserId] = useState(null)
   const [granting, setGranting] = useState(false)
+  const [memberSearch, setMemberSearch] = useState('')
 
   const dsId = datasource?.id
 
   useEffect(() => {
     setSelectedUserId(null)
+    setMemberSearch('')
     if (!open || !dsId) return
     fetchGrants(dsId)
     fetchMembers()
   }, [open, dsId, fetchGrants, fetchMembers])
+
+  // Debounce member search: re-fetch from backend with query filter.
+  const debounceRef = useRef(null)
+  useEffect(() => {
+    if (!open) return
+    clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      fetchMembers(memberSearch.trim())
+    }, 300)
+    return () => clearTimeout(debounceRef.current)
+  }, [memberSearch, open, fetchMembers])
 
   const grantedUserIds = useMemo(
     () => new Set(grants.map((g) => g.user_id)),
@@ -84,9 +97,10 @@ function GrantsDrawer({ datasource, open, onClose }) {
         <Select
           showSearch
           style={{ flex: 1 }}
-          placeholder="Add a member…"
+          placeholder="Search members by name or email…"
           value={selectedUserId}
           onChange={setSelectedUserId}
+          onSearch={setMemberSearch}
           loading={membersLoading}
           options={memberOptions}
           optionFilterProp="label"
@@ -94,6 +108,18 @@ function GrantsDrawer({ datasource, open, onClose }) {
             membersLoading ? 'Loading…' : 'No members found'
           }
           aria-label="Select member to grant access"
+          filterOption={(input, option) =>
+            (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+          }
+          dropdownRender={(menu) => (
+            <>
+              {menu}
+              <Divider style={{ margin: '4px 0' }} />
+              <div style={{ padding: '4px 8px', color: '#888', fontSize: 12 }}>
+                {memberOptions.length} of {membersTotal} members shown
+              </div>
+            </>
+          )}
         />
         <Button
           type="primary"

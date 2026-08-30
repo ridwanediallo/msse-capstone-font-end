@@ -1,4 +1,5 @@
 import { Modal, message } from 'antd'
+import { friendlyError } from '../errors'
 
 /** Shared confirmation modals for user-management actions (table menu + drawer). */
 
@@ -16,7 +17,7 @@ export function confirmDeactivate(user, isSelf, updateUser) {
     onOk: async () => {
       const payload = isSelf ? { is_active: false, confirm: true } : { is_active: false }
       const result = await updateUser(user.id, payload)
-      if (!result.ok) message.error(result.error)
+      if (!result.ok) message.error(friendlyError(result))
     },
   })
 }
@@ -32,7 +33,7 @@ export function confirmRevokeSession(user, revokeSessions) {
       if (result.ok) {
         message.success(`Revoked ${result.data.revoked} session(s)`)
       } else {
-        message.error(result.error)
+        message.error(friendlyError(result))
       }
     },
   })
