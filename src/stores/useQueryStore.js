@@ -107,6 +107,9 @@ const useQueryStore = create((set, get) => ({
         executionTime: data.execution_time,
         noQuery: data.no_query || false,
         questionResolved: data.question_resolved || null,
+        promptTokens: data.prompt_tokens || 0,
+        completionTokens: data.completion_tokens || 0,
+        totalTokens: data.total_tokens || 0,
       }
 
       const isNewConversation = !conversationId

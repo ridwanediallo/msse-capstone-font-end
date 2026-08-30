@@ -8,6 +8,8 @@ const adminUser = {
   is_active: true,
   created_at: '2026-07-01T00:00:00Z',
   last_login_at: '2026-08-01T00:00:00Z',
+  turn_count: 12,
+  total_tokens: 4800,
 }
 
 const memberUser = {
@@ -18,6 +20,8 @@ const memberUser = {
   is_active: true,
   created_at: '2026-07-01T00:00:00Z',
   last_login_at: null,
+  turn_count: 5,
+  total_tokens: 2000,
 }
 
 const memberUser2 = {
@@ -28,6 +32,8 @@ const memberUser2 = {
   is_active: true,
   created_at: '2026-07-02T00:00:00Z',
   last_login_at: null,
+  turn_count: 0,
+  total_tokens: 0,
 }
 
 const datasources = [

@@ -148,6 +148,12 @@ function UsersPage() {
     ]
   }
 
+  const formatTokens = (n) => {
+    if (!n) return '0'
+    if (n >= 1000) return `${(n / 1000).toFixed(1)}k`
+    return String(n)
+  }
+
   const columns = [
     {
       title: 'Name',
@@ -175,6 +181,20 @@ function UsersPage() {
       key: 'status',
       width: 150,
       render: (status) => <StatusBadge status={status} />,
+    },
+    {
+      title: 'Queries',
+      dataIndex: 'turn_count',
+      key: 'turn_count',
+      width: 80,
+      render: (value) => <Text>{value || 0}</Text>,
+    },
+    {
+      title: 'Tokens',
+      dataIndex: 'total_tokens',
+      key: 'total_tokens',
+      width: 90,
+      render: (value) => <Text type="secondary">{formatTokens(value)}</Text>,
     },
     {
       title: 'Last login',
