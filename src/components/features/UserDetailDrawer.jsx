@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button, Drawer, Modal, Select, Tooltip, Typography, message } from 'antd'
-import useAdminStore from '../stores/useAdminStore'
-import { friendlyError } from '../errors'
-import useAuthStore from '../stores/useAuthStore'
-import { apiFetch } from '../api.js'
-import { initials } from '../initials'
-import { relativeTime } from '../lib/relativeTime'
+import useAdminStore from '../../stores/useAdminStore'
+import { friendlyError } from '../../errors'
+import useAuthStore from '../../stores/useAuthStore'
+import { apiFetch } from '../../api.js'
+import { initials } from '../../initials'
+import { relativeTime } from '../../lib/relativeTime'
 import { confirmDeactivate, confirmRevokeSession } from './adminActions'
 
 const { Text } = Typography

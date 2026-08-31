@@ -1,5 +1,5 @@
 import { Bar, Column, Line, Pie, Scatter } from '@ant-design/charts'
-import useThemeStore from '../stores/useThemeStore'
+import useThemeStore from '../../stores/useThemeStore'
 
 // Consistent palette shared across all chart types (brand-aligned).
 const PALETTE = ['#4f46e5', '#0d9488', '#f59e0b', '#ef4444', '#7c3aed', '#06b6d4', '#ec4899', '#84cc16']

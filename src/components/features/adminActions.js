@@ -1,5 +1,5 @@
 import { Modal, message } from 'antd'
-import { friendlyError } from '../errors'
+import { friendlyError } from '../../errors'
 
 /** Shared confirmation modals for user-management actions (table menu + drawer). */
 

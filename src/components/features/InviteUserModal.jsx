@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { Button, Form, Input, Modal, Select, message } from 'antd'
 import { MailOutlined } from '@ant-design/icons'
-import useAdminStore from '../stores/useAdminStore'
-import { friendlyError } from '../errors'
+import useAdminStore from '../../stores/useAdminStore'
+import { friendlyError } from '../../errors'
 import InviteLink from './InviteLink'
 
 function InviteUserModal({ open, onClose }) {

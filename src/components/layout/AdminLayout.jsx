@@ -6,8 +6,8 @@ import {
   FileTextOutlined,
   TeamOutlined,
 } from '@ant-design/icons'
-import useAuthStore from '../stores/useAuthStore'
-import UserFooter from './UserFooter'
+import useAuthStore from '../../stores/useAuthStore'
+import SidebarShell from './SidebarShell'
 
 const NAV_ITEMS = [
   { to: '/admin/users', label: 'Users', icon: <TeamOutlined /> },
@@ -30,20 +30,13 @@ function AdminLayout() {
 
   return (
     <div className="app-shell">
-      <aside className="sidebar">
-        <div className="sidebar-brand">
-          <div className="sidebar-brand-icon">Q</div>
-          <span className="sidebar-brand-name">Queryable</span>
-        </div>
-
-        <button type="button" className="sidebar-new-session" onClick={() => navigate('/')}>
-          <ArrowLeftOutlined style={{ fontSize: 12 }} />
-          Back to app
-        </button>
-
-        <div className="sidebar-section-label">ADMIN CONSOLE</div>
-
-        <nav className="sidebar-recents">
+      <SidebarShell
+        actionIcon={<ArrowLeftOutlined style={{ fontSize: 12 }} />}
+        actionLabel="Back to app"
+        onAction={() => navigate('/')}
+        sectionLabel="ADMIN CONSOLE"
+      >
+        <nav>
           {NAV_ITEMS.map((item) => (
             <NavLink
               key={item.to}
@@ -57,9 +50,7 @@ function AdminLayout() {
             </NavLink>
           ))}
         </nav>
-
-        <UserFooter />
-      </aside>
+      </SidebarShell>
 
       <div className="app-main">
         <Outlet />

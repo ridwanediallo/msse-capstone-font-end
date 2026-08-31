@@ -2,8 +2,8 @@ import { describe, expect, it, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
-import { server } from '../test/mocks/server'
-import useAdminStore from '../stores/useAdminStore'
+import { server } from '../../test/mocks/server'
+import useAdminStore from '../../stores/useAdminStore'
 import GrantsDrawer from './GrantsDrawer'
 
 const ds = {

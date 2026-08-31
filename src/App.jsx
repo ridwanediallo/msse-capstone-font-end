@@ -1,10 +1,10 @@
 import { lazy, Suspense, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import { Spin, Alert } from 'antd'
-import Sidebar from './components/Sidebar'
-import TopBar from './components/TopBar'
-import AdminLayout from './components/AdminLayout'
-import ErrorBoundary from './components/ErrorBoundary'
+import Sidebar from './components/layout/Sidebar'
+import TopBar from './components/layout/TopBar'
+import AdminLayout from './components/layout/AdminLayout'
+import ErrorBoundary from './components/shared/ErrorBoundary'
 import useAuthStore from './stores/useAuthStore'
 
 const QueryPage = lazy(() => import('./pages/QueryPage'))

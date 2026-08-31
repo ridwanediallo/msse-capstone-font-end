@@ -10,7 +10,7 @@ import useDatasourceStore from '../stores/useDatasourceStore'
 import useAuthStore from '../stores/useAuthStore'
 
 // ChartSpec renders an antv/G2 canvas, which jsdom cannot rasterize.
-vi.mock('../components/ChartSpec', () => ({ default: () => null }))
+vi.mock('../components/features/ChartSpec', () => ({ default: () => null }))
 
 const renderPage = () =>
   render(
