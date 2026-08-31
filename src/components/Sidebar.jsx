@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { PlusOutlined } from '@ant-design/icons'
 import useQueryStore from '../stores/useQueryStore'
 import useDatasourceStore from '../stores/useDatasourceStore'
-import UserFooter from './UserFooter'
+import SidebarShell from './SidebarShell'
 
 const MAX_RECENTS = 10
 
@@ -18,7 +18,6 @@ function Sidebar() {
 
   useEffect(() => {
     fetchConversations()
-    // Reload the scoped list whenever the selected datasource changes
   }, [selectedDatasourceId, fetchConversations])
 
   const handleNewSession = () => {
@@ -35,42 +34,31 @@ function Sidebar() {
   const recents = conversations.slice(0, MAX_RECENTS)
 
   return (
-    <aside className="sidebar">
-      <div className="sidebar-brand" onClick={handleNewSession}>
-        <div className="sidebar-brand-icon">Q</div>
-        <span className="sidebar-brand-name">Queryable</span>
-      </div>
-
-      <button className="sidebar-new-session" onClick={handleNewSession}>
-        <PlusOutlined style={{ fontSize: 12 }} />
-        New session
-      </button>
-
-      <div className="sidebar-section-label">RECENT</div>
-
-      <div className="sidebar-recents">
-        {recents.map((c) => (
-          <button
-            key={c.id}
-            className={
-              'sidebar-recent-item' +
-              (c.id === conversationId && location.pathname === '/' ? ' active' : '')
-            }
-            title={c.title || 'Untitled session'}
-            onClick={() => handleSelect(c.id)}
-          >
-            {c.title || 'Untitled session'}
-          </button>
-        ))}
-        {recents.length === 0 && (
-          <span style={{ fontSize: 13, color: 'var(--text-faint)', padding: '4px 12px' }}>
-            No sessions yet
-          </span>
-        )}
-      </div>
-
-      <UserFooter />
-    </aside>
+    <SidebarShell
+      actionIcon={<PlusOutlined style={{ fontSize: 12 }} />}
+      actionLabel="New session"
+      onAction={handleNewSession}
+      sectionLabel="RECENT"
+    >
+      {recents.map((c) => (
+        <button
+          key={c.id}
+          className={
+            'sidebar-recent-item' +
+            (c.id === conversationId && location.pathname === '/' ? ' active' : '')
+          }
+          title={c.title || 'Untitled session'}
+          onClick={() => handleSelect(c.id)}
+        >
+          {c.title || 'Untitled session'}
+        </button>
+      ))}
+      {recents.length === 0 && (
+        <span style={{ fontSize: 13, color: 'var(--text-faint)', padding: '4px 12px' }}>
+          No sessions yet
+        </span>
+      )}
+    </SidebarShell>
   )
 }
 

@@ -3,7 +3,7 @@ import {
   Table, Button, Card, Typography, Tag, Space, Popconfirm, message,
 } from 'antd'
 import {
-  PlusOutlined, DeleteOutlined, ReloadOutlined,
+  PlusOutlined, DeleteOutlined, ReloadOutlined, EditOutlined,
   CheckCircleOutlined, TeamOutlined,
 } from '@ant-design/icons'
 import useDatasourceStore from '../stores/useDatasourceStore'
@@ -19,6 +19,7 @@ function DatasourcePage() {
   } = useDatasourceStore()
 
   const [wizardOpen, setWizardOpen] = useState(false)
+  const [editingDatasource, setEditingDatasource] = useState(null)
   const [grantsTarget, setGrantsTarget] = useState(null)
 
   useEffect(() => {
@@ -100,6 +101,15 @@ function DatasourcePage() {
           </Button>
           <Button
             size="small"
+            icon={<EditOutlined />}
+            onClick={() => setEditingDatasource(record)}
+            disabled={record.is_sample}
+            title={record.is_sample ? 'Cannot edit the sample datasource' : undefined}
+          >
+            Edit
+          </Button>
+          <Button
+            size="small"
             icon={<ReloadOutlined />}
             onClick={() => handleRefresh(record.id)}
             disabled={record.status !== 'ready'}
@@ -150,8 +160,9 @@ function DatasourcePage() {
       </Card>
 
       <DatasourceWizard
-        open={wizardOpen}
-        onClose={() => setWizardOpen(false)}
+        open={wizardOpen || editingDatasource !== null}
+        datasource={editingDatasource}
+        onClose={() => { setWizardOpen(false); setEditingDatasource(null) }}
       />
 
       <GrantsDrawer

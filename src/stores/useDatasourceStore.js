@@ -73,6 +73,21 @@ const useDatasourceStore = create((set, get) => ({
     }
   },
 
+  updateDatasource: async (id, payload) => {
+    try {
+      const res = await apiFetch(`/datasources/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`)
+      await get().fetchDatasources()
+      return { ok: true, data }
+    } catch (err) {
+      return { ok: false, error: err.message }
+    }
+  },
+
   introspectSchema: async (id) => {
     try {
       const res = await apiFetch(`/datasources/${id}/introspect`, {
