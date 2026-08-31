@@ -115,7 +115,7 @@ function GrantsDrawer({ datasource, open, onClose }) {
             <>
               {menu}
               <Divider style={{ margin: '4px 0' }} />
-              <div style={{ padding: '4px 8px', color: '#888', fontSize: 12 }}>
+              <div style={{ padding: '4px 8px', color: 'var(--text-muted)', fontSize: 12 }}>
                 {memberOptions.length} of {membersTotal} members shown
               </div>
             </>

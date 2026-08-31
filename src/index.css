@@ -211,6 +211,11 @@ body {
   box-shadow: var(--shadow-sm);
 }
 
+.sidebar-new-session:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .sidebar-section-label {
   margin: 24px 4px 8px;
   font-size: 10.5px;
@@ -567,6 +572,11 @@ body {
   background: var(--hover-subtle);
 }
 
+.icon-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 /* SQL block */
 .sql-block {
   margin: 0 0 4px;
@@ -625,6 +635,11 @@ body {
   color: var(--accent);
   background: var(--accent-soft);
   box-shadow: var(--shadow-sm);
+}
+
+.suggestion-chip:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .suggestion-chip:disabled {
@@ -722,6 +737,11 @@ body {
 
 .composer-send:active {
   transform: scale(0.96);
+}
+
+.composer-send:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .composer-send:disabled {
@@ -1263,3 +1283,5 @@ html.theme-switching *::after {
 .audit-filter {
   width: 220px;
 }
+
+

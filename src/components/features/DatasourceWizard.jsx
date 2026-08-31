@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import {
   Modal,
   Steps,
@@ -27,7 +27,7 @@ import useDatasourceStore from '../../stores/useDatasourceStore';
 
 const { Title, Text } = Typography;
 
-const steps = [
+const createSteps = [
   { title: 'DB Type', icon: <DatabaseOutlined /> },
   { title: 'Credentials', icon: <FormOutlined /> },
   { title: 'Test', icon: <ApiOutlined /> },
@@ -35,10 +35,20 @@ const steps = [
   { title: 'Save', icon: <SaveOutlined /> },
 ];
 
-function DatasourceWizard({ open, onClose }) {
+const editSteps = [
+  { title: 'Credentials', icon: <FormOutlined /> },
+  { title: 'Test', icon: <ApiOutlined /> },
+  { title: 'Review Schema', icon: <FormOutlined /> },
+  { title: 'Save', icon: <SaveOutlined /> },
+];
+
+function DatasourceWizard({ open, onClose, datasource }) {
+  const editMode = !!datasource;
+
   const {
     testConnection,
     createDatasource,
+    updateDatasource,
     introspectSchema,
     deleteDatasource,
     fetchDatasources,
@@ -55,16 +65,57 @@ function DatasourceWizard({ open, onClose }) {
   const [saved, setSaved] = useState(false);
   const [createdId, setCreatedId] = useState(null);
   const [stepError, setStepError] = useState(null);
+  const [fieldsChanged, setFieldsChanged] = useState(false);
 
   const [form] = Form.useForm();
   const formValues = useRef(null);
 
+  // Pre-fill form in edit mode
+  useEffect(() => {
+    if (editMode && open) {
+      form.setFieldsValue({
+        name: datasource.name,
+        host: datasource.host,
+        port: datasource.port,
+        database_name: datasource.database_name,
+        username: datasource.username,
+        password: '',
+      });
+      setFieldsChanged(false);
+    }
+  }, [editMode, open, datasource, form]);
+
+  const activeSteps = editMode ? editSteps : createSteps;
+
   const handleNext = async () => {
-    if (current === 1) {
+    // Map current step index to the right handler
+    const stepKey = editMode
+      ? ['credentials', 'test', 'schema', 'save'][current]
+      : ['dbtype', 'credentials', 'test', 'schema', 'save'][current];
+
+    if (stepKey === 'dbtype') {
+      setCurrent((prev) => prev + 1);
+      return;
+    }
+
+    if (stepKey === 'credentials') {
       try {
         await form.validateFields();
         const values = form.getFieldsValue();
         formValues.current = values;
+
+        // Track whether any editable field changed (edit mode)
+        if (editMode) {
+          const changed =
+            values.name !== datasource.name ||
+            values.host !== datasource.host ||
+            values.port !== datasource.port ||
+            values.database_name !== datasource.database_name ||
+            values.username !== datasource.username ||
+            (values.password && values.password.length > 0);
+          setFieldsChanged(changed);
+        }
+
         setCurrent((prev) => prev + 1);
       } catch {
         return;
@@ -72,12 +123,12 @@ function DatasourceWizard({ open, onClose }) {
       return;
     }
 
-    if (current === 2) {
+    if (stepKey === 'test') {
       await handleTestConnection();
       return;
     }
 
-    if (current === 3) {
+    if (stepKey === 'schema') {
       if (schemaData.length > 0) {
         setCurrent((prev) => prev + 1);
       } else {
@@ -86,7 +137,7 @@ function DatasourceWizard({ open, onClose }) {
       return;
     }
 
-    if (current === 4) {
+    if (stepKey === 'save') {
       await handleSave();
       return;
     }
@@ -102,7 +153,7 @@ function DatasourceWizard({ open, onClose }) {
     const values = formValues.current;
     if (!values) {
       message.error('Please fill in credentials first');
-      setCurrent(1);
+      setCurrent(editMode ? 0 : 1);
       setConnecting(false);
       return;
     }
@@ -140,40 +191,70 @@ function DatasourceWizard({ open, onClose }) {
 
     if (!values) {
       setStepError('No credentials found. Please start over.');
-      setCurrent(1);
+      setCurrent(editMode ? 0 : 1);
       setIntrospecting(false);
       return;
     }
 
-    // First create the datasource so we can introspect
-    const result = await createDatasource({
-      name: values.name,
-      db_type: dbType,
-      host: values.host,
-      port: values.port,
-      database_name: values.database_name,
-      username: values.username,
-      password: values.password || '',
-    });
+    if (editMode) {
+      // Edit mode: update fields if changed, then re-introspect
+      if (fieldsChanged) {
+        const updatePayload = {
+          name: values.name,
+          host: values.host,
+          port: values.port,
+          database_name: values.database_name,
+          username: values.username,
+        };
+        if (values.password) {
+          updatePayload.password = values.password;
+        }
+        const updateResult = await updateDatasource(datasource.id, updatePayload);
+        if (!updateResult.ok) {
+          setStepError(updateResult.error);
+          setIntrospecting(false);
+          return;
+        }
+      }
 
-    if (result.ok) {
-      setCreatedId(result.data.id);
-      const introspectResult = await introspectSchema(result.data.id);
+      const introspectResult = await introspectSchema(datasource.id);
       if (introspectResult.ok) {
         setSchemaData(introspectResult.data);
+        setCreatedId(datasource.id);
         setStepError(null);
       } else {
-        // Introspection failed — best-effort cleanup of the orphaned datasource.
-        try {
-          await deleteDatasource(result.data.id);
-        } catch {
-          // Delete failed — user may need to remove it manually from the list.
-        }
-        setCreatedId(null);
         setStepError(introspectResult.error);
       }
     } else {
-      setStepError(result.error);
+      // Create mode: create the datasource first, then introspect
+      const result = await createDatasource({
+        name: values.name,
+        db_type: dbType,
+        host: values.host,
+        port: values.port,
+        database_name: values.database_name,
+        username: values.username,
+        password: values.password || '',
+      });
+
+      if (result.ok) {
+        setCreatedId(result.data.id);
+        const introspectResult = await introspectSchema(result.data.id);
+        if (introspectResult.ok) {
+          setSchemaData(introspectResult.data);
+          setStepError(null);
+        } else {
+          try {
+            await deleteDatasource(result.data.id);
+          } catch {
+            // Delete failed — user may need to remove it manually
+          }
+          setCreatedId(null);
+          setStepError(introspectResult.error);
+        }
+      } else {
+        setStepError(result.error);
+      }
     }
     setIntrospecting(false);
   };
@@ -182,10 +263,6 @@ function DatasourceWizard({ open, onClose }) {
     setStepError(null);
     setSaving(true);
     try {
-      // Persist curation (ADR-0006): excluded tables and descriptions feed
-      // the pipeline's prompts and define the Guardian allowlist. Entries
-      // left at their defaults need no request — the backend defaults
-      // is_included to true on introspection.
       const curated = schemaData.filter(
         (t) => t.is_included === false || (t.description || '').trim()
       );
@@ -212,6 +289,7 @@ function DatasourceWizard({ open, onClose }) {
     setSchemaData([]);
     setSaved(false);
     setCreatedId(null);
+    setFieldsChanged(false);
     formValues.current = null;
     form.resetFields();
     onClose();
@@ -231,7 +309,7 @@ function DatasourceWizard({ open, onClose }) {
 
   const renderStepContent = () => {
     const errorAlert = stepError ? (
-      <div style={{ marginBottom: 16, padding: '8px 16px', background: '#fff2f0', border: '1px solid #ffccc7', borderRadius: 6, color: '#cf1322' }}>
+      <div style={{ marginBottom: 16, padding: '8px 16px', background: 'var(--danger-soft)', border: '1px solid var(--danger)', borderRadius: 'var(--r-sm)', color: 'var(--danger)' }}>
         <WarningOutlined style={{ marginRight: 8 }} />
         {stepError}
       </div>
@@ -246,193 +324,227 @@ function DatasourceWizard({ open, onClose }) {
   };
 
   const renderStep = () => {
-    switch (current) {
-      case 0:
-        return (
-          <div style={{ textAlign: 'center', padding: '24px 0' }}>
-            <DatabaseOutlined
-              style={{ fontSize: 48, color: 'var(--accent)', marginBottom: 16 }}
-            />
-            <Title level={4}>PostgreSQL</Title>
-            <Text type="secondary">Connect to any PostgreSQL database</Text>
-          </div>
-        );
+    // In edit mode, step 0 = credentials; in create mode, step 0 = DB type
+    const isStep = (label) => {
+      if (editMode) {
+        return (label === 'credentials' && current === 0)
+          || (label === 'test' && current === 1)
+          || (label === 'schema' && current === 2)
+          || (label === 'save' && current === 3);
+      }
+      return (label === 'dbtype' && current === 0)
+        || (label === 'credentials' && current === 1)
+        || (label === 'test' && current === 2)
+        || (label === 'schema' && current === 3)
+        || (label === 'save' && current === 4);
+    };
 
-      case 1:
-        return (
-          <Form form={form} layout="vertical" initialValues={{ port: 5432 }}>
-            <Form.Item
-              name="name"
-              label="Datasource Name"
-              rules={[{ required: true, message: 'Enter a name' }]}
-            >
-              <Input placeholder="e.g. my_database" />
-            </Form.Item>
-            <Space size={16}>
-              <Form.Item
-                name="host"
-                label="Host"
-                rules={[{ required: true, message: 'Required' }]}
-                style={{ flex: 2 }}
-              >
-                <Input placeholder="localhost" />
-              </Form.Item>
-              <Form.Item
-                name="port"
-                label="Port"
-                rules={[{ required: true }]}
-                style={{ flex: 1 }}
-              >
-                <InputNumber min={1} max={65535} style={{ width: '100%' }} />
-              </Form.Item>
-            </Space>
-            <Form.Item
-              name="database_name"
-              label="Database"
-              rules={[{ required: true, message: 'Required' }]}
-            >
-              <Input placeholder="my_database" />
-            </Form.Item>
-            <Space size={16}>
-              <Form.Item
-                name="username"
-                label="Username"
-                rules={[{ required: true, message: 'Required' }]}
-                style={{ flex: 1 }}
-              >
-                <Input placeholder="postgres" />
-              </Form.Item>
-              <Form.Item name="password" label="Password" style={{ flex: 1 }}>
-                <Input.Password placeholder="(leave empty for trust auth)" />
-              </Form.Item>
-            </Space>
-          </Form>
-        );
-
-      case 2:
-        return (
-          <div style={{ textAlign: 'center', padding: '24px 0' }}>
-            {connecting ? (
-              <Spin tip="Testing connection..." />
-            ) : connectionResult?.success ? (
-              <Result
-                status="success"
-                title="Connection Successful"
-                subTitle="The database is reachable"
-                icon={<CheckCircleOutlined style={{ color: '#52c41a' }} />}
-              />
-            ) : connectionResult ? (
-              <Result
-                status="error"
-                title="Connection Failed"
-                subTitle={connectionResult.message || connectionResult.error || 'Unknown error'}
-                icon={<CloseCircleOutlined style={{ color: '#ff4d4f' }} />}
-              />
-            ) : (
-              <Text type="secondary">Click "Next" to test the connection</Text>
-            )}
-          </div>
-        );
-
-      case 3:
-        return (
-          <div>
-            {introspecting ? (
-              <div style={{ textAlign: 'center', padding: '48px 0' }}>
-                <Spin tip="Introspecting schema..." />
-              </div>
-            ) : (
-              <Table
-                dataSource={schemaData.map((t, i) => ({ ...t, key: i }))}
-                columns={[
-                  {
-                    title: 'Table',
-                    dataIndex: 'table_name',
-                    key: 'table_name',
-                  },
-                  {
-                    title: 'Columns',
-                    key: 'columns',
-                    render: (_, record) => record.columns?.length || 0,
-                  },
-                  {
-                    title: 'Rows',
-                    dataIndex: 'row_count',
-                    key: 'row_count',
-                    render: (val) => val?.toLocaleString() || '0',
-                  },
-                  {
-                    title: 'Description (helps the AI)',
-                    key: 'description',
-                    render: (_, record, index) => (
-                      <Input
-                        size="small"
-                        placeholder="e.g. customer master list"
-                        value={record.description || ''}
-                        onChange={(e) =>
-                          setTableDescription(index, e.target.value)
-                        }
-                        aria-label={`Description for ${record.table_name}`}
-                      />
-                    ),
-                  },
-                  {
-                    title: 'Include',
-                    key: 'is_included',
-                    render: (_, record, index) => (
-                      <Switch
-                        checked={record.is_included !== false}
-                        onChange={(checked) =>
-                          toggleTableIncluded(index, checked)
-                        }
-                        aria-label={`Include ${record.table_name}`}
-                      />
-                    ),
-                  },
-                ]}
-                pagination={false}
-                size="small"
-              />
-            )}
-          </div>
-        );
-
-      case 4:
-        return saved ? (
-          <Result
-            status="success"
-            title="Datasource Saved"
-            subTitle="You can now use this datasource for queries"
-            icon={<CheckCircleOutlined style={{ color: '#52c41a' }} />}
+    if (isStep('dbtype')) {
+      return (
+        <div style={{ textAlign: 'center', padding: '24px 0' }}>
+          <DatabaseOutlined
+            style={{ fontSize: 48, color: 'var(--accent)', marginBottom: 16 }}
           />
-        ) : (
-          <div style={{ textAlign: 'center', padding: '24px 0' }}>
-            <DatabaseOutlined
-              style={{ fontSize: 48, color: 'var(--teal)', marginBottom: 16 }}
-            />
-            <Title level={4}>Ready to Save</Title>
-            <Text type="secondary">
-              {schemaData.length} tables will be saved to the schema catalog
-            </Text>
-            {schemaData.some((t) => t.is_included === false) && (
-              <div style={{ marginTop: 8 }}>
-                <WarningOutlined style={{ color: '#faad14', marginRight: 6 }} />
-                <Text type="warning">
-                  Excluded tables are hidden from the AI and cannot be queried
-                </Text>
-              </div>
-            )}
-          </div>
-        );
-
-      default:
-        return null;
+          <Title level={4}>PostgreSQL</Title>
+          <Text type="secondary">Connect to any PostgreSQL database</Text>
+        </div>
+      );
     }
+
+    if (isStep('credentials')) {
+      return (
+        <Form form={form} layout="vertical" initialValues={{ port: 5432 }}>
+          <Form.Item
+            name="name"
+            label="Datasource Name"
+            rules={[{ required: true, message: 'Enter a name' }]}
+          >
+            <Input placeholder="e.g. my_database" size="large" />
+          </Form.Item>
+          <Space size={16}>
+            <Form.Item
+              name="host"
+              label="Host"
+              rules={[{ required: true, message: 'Required' }]}
+              style={{ flex: 2 }}
+            >
+              <Input placeholder="localhost" size="large" />
+            </Form.Item>
+            <Form.Item
+              name="port"
+              label="Port"
+              rules={[{ required: true }]}
+              style={{ flex: 1 }}
+            >
+              <InputNumber min={1} max={65535} style={{ width: '100%' }} size="large" />
+            </Form.Item>
+          </Space>
+          <Form.Item
+            name="database_name"
+            label="Database"
+            rules={[{ required: true, message: 'Required' }]}
+          >
+            <Input placeholder="my_database" size="large" />
+          </Form.Item>
+          <Space size={16}>
+            <Form.Item
+              name="username"
+              label="Username"
+              rules={[{ required: true, message: 'Required' }]}
+              style={{ flex: 1 }}
+            >
+              <Input placeholder="postgres" size="large" />
+            </Form.Item>
+            <Form.Item name="password" label="Password" style={{ flex: 1 }}>
+              <Input.Password
+                placeholder={editMode ? 'Leave blank to keep current' : '(leave empty for trust auth)'}
+                size="large"
+              />
+            </Form.Item>
+          </Space>
+        </Form>
+      );
+    }
+
+    if (isStep('test')) {
+      return (
+        <div style={{ textAlign: 'center', padding: '24px 0' }}>
+          {connecting ? (
+            <Spin tip="Testing connection..." />
+          ) : connectionResult?.success ? (
+            <Result
+              status="success"
+              title="Connection Successful"
+              subTitle="The database is reachable"
+              icon={<CheckCircleOutlined style={{ color: 'var(--green)' }} />}
+            />
+          ) : connectionResult ? (
+            <Result
+              status="error"
+              title="Connection Failed"
+              subTitle={connectionResult.message || connectionResult.error || 'Unknown error'}
+              icon={<CloseCircleOutlined style={{ color: 'var(--danger)' }} />}
+            />
+          ) : (
+            <Text type="secondary">Click "Next" to test the connection</Text>
+          )}
+        </div>
+      );
+    }
+
+    if (isStep('schema')) {
+      return (
+        <div>
+          {introspecting ? (
+            <div style={{ textAlign: 'center', padding: '48px 0' }}>
+              <Spin tip={editMode ? 'Re-introspecting schema...' : 'Introspecting schema...'} />
+            </div>
+          ) : (
+            <Table
+              dataSource={schemaData.map((t, i) => ({ ...t, key: i }))}
+              columns={[
+                {
+                  title: 'Table',
+                  dataIndex: 'table_name',
+                  key: 'table_name',
+                },
+                {
+                  title: 'Columns',
+                  key: 'columns',
+                  render: (_, record) => record.columns?.length || 0,
+                },
+                {
+                  title: 'Rows',
+                  dataIndex: 'row_count',
+                  key: 'row_count',
+                  render: (val) => val?.toLocaleString() || '0',
+                },
+                {
+                  title: 'Description (helps the AI)',
+                  key: 'description',
+                  render: (_, record, index) => (
+                    <Input
+                      size="small"
+                      placeholder="e.g. customer master list"
+                      value={record.description || ''}
+                      onChange={(e) =>
+                        setTableDescription(index, e.target.value)
+                      }
+                      aria-label={`Description for ${record.table_name}`}
+                    />
+                  ),
+                },
+                {
+                  title: 'Include',
+                  key: 'is_included',
+                  render: (_, record, index) => (
+                    <Switch
+                      checked={record.is_included !== false}
+                      onChange={(checked) =>
+                        toggleTableIncluded(index, checked)
+                      }
+                      aria-label={`Include ${record.table_name}`}
+                    />
+                  ),
+                },
+              ]}
+              pagination={false}
+              size="small"
+            />
+          )}
+        </div>
+      );
+    }
+
+    if (isStep('save')) {
+      return saved ? (
+        <Result
+          status="success"
+          title={editMode ? 'Datasource Updated' : 'Datasource Saved'}
+          subTitle="You can now use this datasource for queries"
+          icon={<CheckCircleOutlined style={{ color: 'var(--green)' }} />}
+        />
+      ) : (
+        <div style={{ textAlign: 'center', padding: '24px 0' }}>
+          <DatabaseOutlined
+            style={{ fontSize: 48, color: 'var(--teal)', marginBottom: 16 }}
+          />
+          <Title level={4}>Ready to {editMode ? 'Update' : 'Save'}</Title>
+          <Text type="secondary">
+            {schemaData.length} tables will be saved to the schema catalog
+          </Text>
+          {schemaData.some((t) => t.is_included === false) && (
+            <div style={{ marginTop: 8 }}>
+              <WarningOutlined style={{ color: 'var(--warning)', marginRight: 6 }} />
+              <Text type="warning">
+                Excluded tables are hidden from the AI and cannot be queried
+              </Text>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    return null;
   };
+
+  // Determine the next button label
+  const getNextLabel = () => {
+    const stepKey = editMode
+      ? ['credentials', 'test', 'schema', 'save'][current]
+      : ['dbtype', 'credentials', 'test', 'schema', 'save'][current];
+
+    if (stepKey === 'test') return 'Test Connection';
+    if (stepKey === 'schema') return schemaData.length > 0 ? 'Next' : editMode ? 'Re-introspect & Review' : 'Introspect & Create';
+    if (stepKey === 'save') return editMode ? 'Update' : 'Save';
+    return 'Next';
+  };
+
+  const lastStepIndex = editMode ? 3 : 4;
 
   return (
     <Modal
-      title="Add Datasource"
+      title={editMode ? 'Edit Datasource' : 'Add Datasource'}
       open={open}
       onCancel={handleClose}
       width={720}
@@ -444,7 +556,7 @@ function DatasourceWizard({ open, onClose }) {
         ) : (
           <Space>
             <Button onClick={handleClose}>Cancel</Button>
-            {current > 0 && current < 4 && (
+            {current > 0 && current < lastStepIndex && (
               <Button onClick={() => { setStepError(null); setCurrent((prev) => prev - 1); }}>
                 Back
               </Button>
@@ -455,19 +567,13 @@ function DatasourceWizard({ open, onClose }) {
               loading={connecting || introspecting || saving}
               disabled={saved}
             >
-              {current === 2
-                ? 'Test Connection'
-                : current === 3
-                  ? schemaData.length > 0 ? 'Next' : 'Introspect & Create'
-                  : current === 4
-                    ? 'Save'
-                    : 'Next'}
+              {getNextLabel()}
             </Button>
           </Space>
         )
       }
     >
-      <Steps current={current} items={steps} style={{ marginBottom: 24 }} />
+      <Steps current={current} items={activeSteps} style={{ marginBottom: 24 }} />
       {renderStepContent()}
     </Modal>
   );
