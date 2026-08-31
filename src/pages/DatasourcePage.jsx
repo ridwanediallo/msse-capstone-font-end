@@ -8,8 +8,8 @@ import {
 } from '@ant-design/icons'
 import useDatasourceStore from '../stores/useDatasourceStore'
 import { friendlyError } from '../errors'
-import DatasourceWizard from '../components/DatasourceWizard'
-import GrantsDrawer from '../components/GrantsDrawer'
+import DatasourceWizard from '../components/features/DatasourceWizard'
+import GrantsDrawer from '../components/features/GrantsDrawer'
 
 const { Title, Text } = Typography
 

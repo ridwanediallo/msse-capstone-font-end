@@ -1,8 +1,8 @@
 import { useNavigate } from 'react-router-dom'
 import { Popover } from 'antd'
 import { LogoutOutlined, LoginOutlined } from '@ant-design/icons'
-import useAuthStore from '../stores/useAuthStore'
-import { initials } from '../initials'
+import useAuthStore from '../../stores/useAuthStore'
+import { initials } from '../../initials'
 
 function UserFooter() {
   const navigate = useNavigate()

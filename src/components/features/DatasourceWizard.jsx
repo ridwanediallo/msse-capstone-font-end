@@ -23,7 +23,7 @@ import {
   SaveOutlined,
   WarningOutlined,
 } from '@ant-design/icons';
-import useDatasourceStore from '../stores/useDatasourceStore';
+import useDatasourceStore from '../../stores/useDatasourceStore';
 
 const { Title, Text } = Typography;
 

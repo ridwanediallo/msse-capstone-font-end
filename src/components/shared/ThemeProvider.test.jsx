@@ -1,7 +1,7 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest'
 import { render, act } from '@testing-library/react'
 import ThemeProvider from './ThemeProvider'
-import useThemeStore, { THEME_STORAGE_KEY } from '../stores/useThemeStore'
+import useThemeStore, { THEME_STORAGE_KEY } from '../../stores/useThemeStore'
 
 describe('ThemeProvider', () => {
   beforeEach(() => {

@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Button, Divider, Drawer, Empty, Popconfirm, Select, Typography, message } from 'antd'
 import { DeleteOutlined, UserAddOutlined } from '@ant-design/icons'
-import useAdminStore from '../stores/useAdminStore'
-import { friendlyError } from '../errors'
-import { relativeTime } from '../lib/relativeTime'
+import useAdminStore from '../../stores/useAdminStore'
+import { friendlyError } from '../../errors'
+import { relativeTime } from '../../lib/relativeTime'
 
 const { Text } = Typography
 

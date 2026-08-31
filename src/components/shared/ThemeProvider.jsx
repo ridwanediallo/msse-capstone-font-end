@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect } from 'react'
 import { ConfigProvider, theme as antdTheme } from 'antd'
-import useThemeStore, { THEME_STORAGE_KEY } from '../stores/useThemeStore'
+import useThemeStore, { THEME_STORAGE_KEY } from '../../stores/useThemeStore'
 
 const FONT = {
   fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
