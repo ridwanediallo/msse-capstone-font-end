@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import {
   ArrowUpOutlined, ArrowDownOutlined, MinusOutlined,
 } from '@ant-design/icons'
-import { parseKpiValue, formatKpiAmount } from '../lib/kpiFormat'
+import { parseKpiValue, formatKpiAmount } from '../../lib/kpiFormat'
 
 const DURATION = 650
 

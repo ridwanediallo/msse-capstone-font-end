@@ -6,7 +6,7 @@ import {
   FileTextOutlined,
   TeamOutlined,
 } from '@ant-design/icons'
-import useAuthStore from '../stores/useAuthStore'
+import useAuthStore from '../../stores/useAuthStore'
 import SidebarShell from './SidebarShell'
 
 const NAV_ITEMS = [

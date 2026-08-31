@@ -6,10 +6,10 @@ import {
   DeleteOutlined, DownOutlined,
   SunOutlined, MoonOutlined,
 } from '@ant-design/icons'
-import useDatasourceStore from '../stores/useDatasourceStore'
-import useQueryStore from '../stores/useQueryStore'
-import useAuthStore from '../stores/useAuthStore'
-import useThemeStore from '../stores/useThemeStore'
+import useDatasourceStore from '../../stores/useDatasourceStore'
+import useQueryStore from '../../stores/useQueryStore'
+import useAuthStore from '../../stores/useAuthStore'
+import useThemeStore from '../../stores/useThemeStore'
 
 const { Text } = Typography
 

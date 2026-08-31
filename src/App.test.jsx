@@ -7,7 +7,7 @@ import useAuthStore from './stores/useAuthStore'
 import useQueryStore from './stores/useQueryStore'
 import useDatasourceStore from './stores/useDatasourceStore'
 
-vi.mock('./components/ChartSpec', () => ({ default: () => null }))
+vi.mock('./components/features/ChartSpec', () => ({ default: () => null }))
 
 const memberUser = {
   id: 'u-member',

@@ -1,8 +1,8 @@
 import { useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { PlusOutlined } from '@ant-design/icons'
-import useQueryStore from '../stores/useQueryStore'
-import useDatasourceStore from '../stores/useDatasourceStore'
+import useQueryStore from '../../stores/useQueryStore'
+import useDatasourceStore from '../../stores/useDatasourceStore'
 import SidebarShell from './SidebarShell'
 
 const MAX_RECENTS = 10

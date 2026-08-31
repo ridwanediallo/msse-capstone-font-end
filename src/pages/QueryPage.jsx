@@ -14,8 +14,8 @@ import 'highlight.js/styles/github.css'
 import useQueryStore from '../stores/useQueryStore'
 import useDatasourceStore from '../stores/useDatasourceStore'
 import useAuthStore from '../stores/useAuthStore'
-const ChartSpec = lazy(() => import('../components/ChartSpec'))
-import KpiCard from '../components/KpiCard'
+const ChartSpec = lazy(() => import('../components/features/ChartSpec'))
+import KpiCard from '../components/features/KpiCard'
 
 hljs.registerLanguage('postgresql', postgresql)
 
