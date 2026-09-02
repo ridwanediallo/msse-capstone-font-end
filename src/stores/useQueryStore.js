@@ -31,6 +31,18 @@ const useQueryStore = create((set, get) => ({
   suggestions: [],
   suggestionsLoading: false,
 
+  // Suggest-report: non-blocking async insight generation
+  suggestStatus: 'idle', // 'idle' | 'processing' | 'ready'
+  suggestReport: null,
+  suggestSuggestions: [],
+  _suggestPollTimer: null,
+  _suggestDsId: null,
+  // True after the first auto-trigger per login session. Persisted to
+  // sessionStorage so page refreshes don't re-trigger LLM calls.
+  _suggestAutoTriggered: (() => {
+    try { return sessionStorage.getItem('suggestAutoTriggered') === '1' } catch { return false }
+  })(),
+
   // Sidebar / history list
   conversations: [],
   conversationsLoading: false,
@@ -224,19 +236,36 @@ const useQueryStore = create((set, get) => ({
     }
   },
 
-  newConversation: () =>
+  newConversation: () => {
+    const { _suggestPollTimer } = get()
+    if (_suggestPollTimer) clearTimeout(_suggestPollTimer)
     set({
       conversationId: null,
       turns: [],
-      suggestions: [],
       error: null,
       stepsDone: 0,
-    }),
+      suggestStatus: 'idle',
+      suggestReport: null,
+      suggestSuggestions: [],
+      _suggestPollTimer: null,
+    })
+  },
 
   reset: () => {
-    const { _queryAbort } = get()
+    const { _queryAbort, _suggestPollTimer } = get()
     if (_queryAbort) _queryAbort.abort()
-    try { sessionStorage.removeItem('lastFailedQuestion') } catch {}
+    if (_suggestPollTimer) clearTimeout(_suggestPollTimer)
+    try {
+      sessionStorage.removeItem('lastFailedQuestion')
+      // NOTE: Do NOT clear 'suggestAutoTriggered' here — the guard must
+      // survive logout so the auto-trigger doesn't re-fire when the user
+      // is redirected to '/' after sign-out.
+      // Clear all suggestApplied:* keys
+      for (let i = sessionStorage.length - 1; i >= 0; i--) {
+        const key = sessionStorage.key(i)
+        if (key && key.startsWith('suggestApplied:')) sessionStorage.removeItem(key)
+      }
+    } catch {}
     set({
       loading: false,
       error: null,
@@ -245,6 +274,13 @@ const useQueryStore = create((set, get) => ({
       turns: [],
       suggestions: [],
       suggestionsLoading: false,
+      suggestStatus: 'idle',
+      suggestReport: null,
+      suggestSuggestions: [],
+      _suggestPollTimer: null,
+      _suggestDsId: null,
+      // NOTE: Do NOT reset _suggestAutoTriggered — it persists via
+      // sessionStorage and prevents re-triggering after logout.
       conversations: [],
       conversationsLoading: false,
       _conversationsFetchedAt: 0,
@@ -266,6 +302,150 @@ const useQueryStore = create((set, get) => ({
       set({ suggestions: data.suggestions || [], suggestionsLoading: false })
     } catch {
       set({ suggestions: [], suggestionsLoading: false })
+    }
+  },
+
+  // --- Suggest Report (async two-step) ---
+
+  // Poll the status endpoint with exponential backoff: 3s, then x1.5 per
+  // poll, capped at 10s — long generations don't hammer the endpoint
+  // (review item #12). Self-scheduling via setTimeout; the timer id is
+  // stored in _suggestPollTimer so cancel/reset can clearTimeout it.
+  _startSuggestPolling: (dsId) => {
+    const { _suggestPollTimer } = get()
+    if (_suggestPollTimer) clearTimeout(_suggestPollTimer)
+    const tick = (delay) => {
+      const timer = setTimeout(async () => {
+        await get().pollSuggestStatus(dsId)
+        if (get().suggestStatus === 'processing') {
+          tick(Math.min(Math.round(delay * 1.5), 10000))
+        }
+      }, delay)
+      set({ _suggestPollTimer: timer })
+    }
+    tick(3000)
+  },
+
+  startSuggestReport: async (dsId) => {
+    if (!dsId) return
+    const { suggestStatus, _suggestPollTimer } = get()
+    if (suggestStatus === 'processing') return
+
+    // Clear any existing poll timer
+    if (_suggestPollTimer) clearTimeout(_suggestPollTimer)
+
+    set({ suggestStatus: 'processing', suggestReport: null, suggestSuggestions: [], _suggestDsId: dsId })
+    try {
+      const res = await apiFetch(`/datasources/${dsId}/suggest-report`, { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`)
+      if (data.status === 'ready') {
+        // Already done (cached)
+        set({ suggestStatus: 'ready', suggestReport: data.report, suggestSuggestions: data.suggestions || [] })
+        return
+      }
+      // Start polling
+      get()._startSuggestPolling(dsId)
+    } catch {
+      set({ suggestStatus: 'idle' })
+    }
+  },
+
+  pollSuggestStatus: async (dsId) => {
+    try {
+      const res = await apiFetch(`/datasources/${dsId}/suggest-report/status`)
+      const data = await res.json()
+      if (data.status === 'ready') {
+        set({
+          suggestStatus: 'ready',
+          suggestReport: data.report,
+          suggestSuggestions: data.suggestions || [],
+        })
+      } else if (data.status === 'error') {
+        set({ suggestStatus: 'idle' })
+      }
+      // 'processing' → the poller keeps going with backoff
+    } catch {
+      // Network error — stop polling
+      set({ suggestStatus: 'idle' })
+    }
+  },
+
+  applySuggestedReport: () => {
+    const { suggestReport, suggestSuggestions, _suggestDsId } = get()
+    if (!suggestReport) return
+
+    // Mark this datasource's suggestion as applied so checkSuggestStatus
+    // won't re-show the button after page reload.
+    if (_suggestDsId) {
+      try { sessionStorage.setItem(`suggestApplied:${_suggestDsId}`, '1') } catch {}
+    }
+
+    const newTurn = {
+      id: suggestReport.turn_id,
+      question: suggestReport.question,
+      summary: suggestReport.summary,
+      sql: suggestReport.sql,
+      rows: suggestReport.rows,
+      rowCount: suggestReport.row_count,
+      chartSpec: suggestReport.chart_spec,
+      kpis: suggestReport.kpis || null,
+      executionTime: suggestReport.execution_time,
+      noQuery: suggestReport.no_query || false,
+      questionResolved: null,
+      promptTokens: 0,
+      completionTokens: 0,
+      totalTokens: 0,
+    }
+
+    set((state) => ({
+      conversationId: suggestReport.conversation_id,
+      turns: [...state.turns, newTurn],
+      suggestions: suggestSuggestions,
+      suggestStatus: 'idle',
+      suggestReport: null,
+      suggestSuggestions: [],
+    }))
+
+    get().fetchConversations({ force: true })
+  },
+
+  cancelSuggestReport: () => {
+    const { _suggestPollTimer } = get()
+    if (_suggestPollTimer) clearTimeout(_suggestPollTimer)
+    set({ suggestStatus: 'idle', _suggestPollTimer: null })
+  },
+
+  // Called on page mount to resume an in-progress suggest-report after reload.
+  // Checks the backend status and either resumes polling or loads the result.
+  checkSuggestStatus: async (dsId) => {
+    if (!dsId) return
+    const { suggestStatus } = get()
+    // Already tracking — don't interfere
+    if (suggestStatus === 'processing' || suggestStatus === 'ready') return
+
+    // User already applied this datasource's suggestion — don't re-show button
+    try {
+      if (sessionStorage.getItem(`suggestApplied:${dsId}`) === '1') return
+    } catch {}
+
+    try {
+      const res = await apiFetch(`/datasources/${dsId}/suggest-report/status`)
+      const data = await res.json()
+      if (data.status === 'processing') {
+        set({ suggestStatus: 'processing', _suggestDsId: dsId })
+        get()._startSuggestPolling(dsId)
+      } else if (data.status === 'ready') {
+        set({
+          suggestStatus: 'ready',
+          suggestReport: data.report,
+          suggestSuggestions: data.suggestions || [],
+          _suggestDsId: dsId,
+        })
+      }
+      // 'idle' or no entry → do nothing
+    } catch {
+      // Network error — ignore, user can click manually
     }
   },
 }))

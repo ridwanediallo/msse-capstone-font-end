@@ -268,6 +268,46 @@ export const handlers = [
         : ['What is the total amount by status?']
     return HttpResponse.json({ suggestions })
   }),
+  // First call returns "processing", subsequent calls return "ready" —
+  // exercises the polling path in tests.
+  ...(() => {
+    let suggestPollCount = 0
+    return [
+      http.post('/api/v1/datasources/:id/suggest-report', ({ params }) => {
+        suggestPollCount = 0
+        return HttpResponse.json({ status: 'processing', ds_id: params.id })
+      }),
+      http.get('/api/v1/datasources/:id/suggest-report/status', ({ params }) => {
+        suggestPollCount += 1
+        if (suggestPollCount <= 1) {
+          return HttpResponse.json({ status: 'processing', ds_id: params.id })
+        }
+        return HttpResponse.json({
+          status: 'ready',
+          report: {
+            question: 'What is the total revenue by region?',
+            summary: 'North leads with $1.2M in total revenue.',
+            sql: 'SELECT region, SUM(amount) AS total FROM sales GROUP BY region',
+            rows: [
+              { region: 'North', total: 1200000 },
+              { region: 'South', total: 800000 },
+            ],
+            row_count: 2,
+            chart_spec: { type: 'bar', title: 'Revenue by Region', x: 'region', y: 'total' },
+            kpis: [{ label: 'TOP REGION', value: 'North', trend: 'flat' }],
+            execution_time: 0.42,
+            no_query: false,
+            conversation_id: 'conv-suggested',
+            turn_id: 'turn-suggested',
+          },
+          suggestions: [
+            'Which customers have highest growth?',
+            'How does revenue trend over the last 12 months?',
+          ],
+        })
+      }),
+    ]
+  })(),
   http.put('/api/v1/datasources/:id/schema/:catalogId', ({ params }) =>
     HttpResponse.json({
       id: params.catalogId,

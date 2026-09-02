@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { PlusOutlined } from '@ant-design/icons'
+import { PlusOutlined, BulbOutlined } from '@ant-design/icons'
 import useQueryStore from '../../stores/useQueryStore'
 import useDatasourceStore from '../../stores/useDatasourceStore'
 import SidebarShell from './SidebarShell'
@@ -13,6 +13,7 @@ function Sidebar() {
   const {
     conversations, fetchConversations, loadConversation,
     newConversation, conversationId, loading,
+    startSuggestReport, suggestStatus,
   } = useQueryStore()
   const selectedDatasourceId = useDatasourceStore((s) => s.selectedDatasourceId)
 
@@ -23,6 +24,12 @@ function Sidebar() {
   const handleNewSession = () => {
     newConversation()
     navigate('/')
+  }
+
+  const handleSuggest = () => {
+    if (suggestStatus === 'processing') return
+    navigate('/')
+    startSuggestReport(selectedDatasourceId)
   }
 
   const handleSelect = (id) => {
@@ -38,6 +45,9 @@ function Sidebar() {
       actionIcon={<PlusOutlined style={{ fontSize: 12 }} />}
       actionLabel="New session"
       onAction={handleNewSession}
+      secondActionIcon={<BulbOutlined style={{ fontSize: 12 }} />}
+      secondActionLabel="Get insights"
+      onSecondAction={handleSuggest}
       sectionLabel="RECENT"
     >
       {recents.map((c) => (

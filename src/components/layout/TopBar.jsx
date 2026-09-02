@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, Dropdown, Drawer, List, Popconfirm, Typography, Empty } from 'antd'
+import { Button, Dropdown, Drawer, List, Popconfirm, Typography, Empty, Space } from 'antd'
 import {
   DatabaseOutlined, HistoryOutlined, SettingOutlined,
   DeleteOutlined, DownOutlined,
   SunOutlined, MoonOutlined,
+  LoadingOutlined, BulbOutlined, CloseOutlined,
 } from '@ant-design/icons'
 import useDatasourceStore from '../../stores/useDatasourceStore'
 import useQueryStore from '../../stores/useQueryStore'
@@ -22,7 +23,7 @@ function TopBar() {
   } = useDatasourceStore()
   const {
     conversations, fetchConversations, loadConversation, deleteConversation,
-    newConversation,
+    newConversation, suggestStatus, applySuggestedReport, cancelSuggestReport,
   } = useQueryStore()
   const user = useAuthStore((s) => s.user)
   const isAdmin = user?.role === 'admin'
@@ -92,6 +93,24 @@ function TopBar() {
       </Dropdown>
 
       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        {suggestStatus === 'processing' && (
+          <Space.Compact>
+            <Button icon={<LoadingOutlined />} loading style={{ pointerEvents: 'none' }}>
+              Discovering insights…
+            </Button>
+            <Button
+              icon={<CloseOutlined />}
+              onClick={cancelSuggestReport}
+              title="Cancel insight discovery"
+              aria-label="Cancel insight discovery"
+            />
+          </Space.Compact>
+        )}
+        {suggestStatus === 'ready' && (
+          <Button type="primary" icon={<BulbOutlined />} onClick={applySuggestedReport}>
+            See datasource insight
+          </Button>
+        )}
         <Button icon={<HistoryOutlined />} onClick={openHistory}>
           History
         </Button>

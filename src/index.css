@@ -216,6 +216,10 @@ body {
   outline-offset: 2px;
 }
 
+.sidebar-suggest {
+  margin-top: 6px;
+}
+
 .sidebar-section-label {
   margin: 24px 4px 8px;
   font-size: 10.5px;
