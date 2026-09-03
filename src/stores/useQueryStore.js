@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { message } from 'antd'
 import { apiFetch, readNdjsonStream } from '../api.js'
 import useDatasourceStore from './useDatasourceStore'
 import useAuthStore from './useAuthStore'
@@ -311,13 +312,22 @@ const useQueryStore = create((set, get) => ({
   // poll, capped at 10s — long generations don't hammer the endpoint
   // (review item #12). Self-scheduling via setTimeout; the timer id is
   // stored in _suggestPollTimer so cancel/reset can clearTimeout it.
+  // Hard stop after 30 attempts (~4 min) so a lost cache entry (e.g. backend
+  // restart) can never leave the spinner spinning forever.
   _startSuggestPolling: (dsId) => {
     const { _suggestPollTimer } = get()
     if (_suggestPollTimer) clearTimeout(_suggestPollTimer)
+    let attempts = 0
     const tick = (delay) => {
       const timer = setTimeout(async () => {
         await get().pollSuggestStatus(dsId)
+        attempts += 1
         if (get().suggestStatus === 'processing') {
+          if (attempts >= 30) {
+            set({ suggestStatus: 'idle' })
+            message.error('Insight discovery is taking too long. Please try again.')
+            return
+          }
           tick(Math.min(Math.round(delay * 1.5), 10000))
         }
       }, delay)
@@ -346,8 +356,9 @@ const useQueryStore = create((set, get) => ({
       }
       // Start polling
       get()._startSuggestPolling(dsId)
-    } catch {
+    } catch (err) {
       set({ suggestStatus: 'idle' })
+      message.error(err?.message || 'Could not start insight discovery.')
     }
   },
 
@@ -363,6 +374,8 @@ const useQueryStore = create((set, get) => ({
         })
       } else if (data.status === 'error') {
         set({ suggestStatus: 'idle' })
+        const detail = data.error || 'Insight discovery failed.'
+        message.error(`Insight discovery failed. ${detail}`)
       }
       // 'processing' → the poller keeps going with backoff
     } catch {
