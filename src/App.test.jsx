@@ -9,11 +9,11 @@ import useDatasourceStore from './stores/useDatasourceStore'
 
 vi.mock('./components/features/ChartSpec', () => ({ default: () => null }))
 
-const memberUser = {
-  id: 'u-member',
-  email: 'member@queryable.local',
-  name: 'Member',
-  role: 'member',
+const regularUser = {
+  id: 'u-user',
+  email: 'user@queryable.local',
+  name: 'User',
+  role: 'user',
   is_active: true,
   created_at: '2026-07-01T00:00:00Z',
   last_login_at: null,
@@ -46,10 +46,10 @@ describe('App admin route guard', () => {
     ).toBeInTheDocument()
   })
 
-  it('redirects a member away from /datasources', async () => {
+  it('redirects a user away from /datasources', async () => {
     server.use(
       http.get('/api/v1/auth/me', () =>
-        HttpResponse.json({ is_authenticated: true, user: memberUser }),
+        HttpResponse.json({ is_authenticated: true, user: regularUser }),
       ),
     )
     renderAt('/datasources')
@@ -95,13 +95,13 @@ describe('App admin route guard', () => {
       ),
       http.post('/api/v1/auth/login', async () => {
         signedIn = true
-        return HttpResponse.json({ user: memberUser })
+        return HttpResponse.json({ user: regularUser })
       }),
     )
     renderAt('/')
     expect(await screen.findByText('No sessions yet')).toBeInTheDocument()
 
-    await useAuthStore.getState().login('member@queryable.local', 'Longenough1')
+    await useAuthStore.getState().login('user@queryable.local', 'Longenough1')
 
     expect(
       await screen.findByText('Admin revenue report'),
@@ -119,7 +119,7 @@ describe('App admin route guard', () => {
     let signedOut = false
     server.use(
       http.get('/api/v1/auth/me', () =>
-        HttpResponse.json({ is_authenticated: !signedOut, user: signedOut ? null : memberUser }),
+        HttpResponse.json({ is_authenticated: !signedOut, user: signedOut ? null : regularUser }),
       ),
       http.get('/api/v1/conversations', () =>
         HttpResponse.json(signedOut ? [] : [adminConv]),

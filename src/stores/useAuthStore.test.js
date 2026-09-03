@@ -65,16 +65,16 @@ describe('useAuthStore', () => {
 
   describe('login', () => {
     it('sets the user on success', async () => {
-      const result = await useAuthStore.getState().login('member@queryable.local', 'pw')
+      const result = await useAuthStore.getState().login('user@queryable.local', 'pw')
       expect(result.ok).toBe(true)
       const state = useAuthStore.getState()
       expect(state.isAuthenticated).toBe(true)
-      expect(state.user.role).toBe('member')
+      expect(state.user.role).toBe('user')
       expect(state.error).toBeNull()
     })
 
     it('records the error on failure', async () => {
-      const result = await useAuthStore.getState().login('member@queryable.local', 'wrong')
+      const result = await useAuthStore.getState().login('user@queryable.local', 'wrong')
       expect(result.ok).toBe(false)
       const state = useAuthStore.getState()
       expect(state.error).toBe('Invalid email or password')
@@ -93,7 +93,7 @@ describe('useAuthStore', () => {
         currentDatasource: { id: 'ds-2' },
       })
 
-      await useAuthStore.getState().login('member@queryable.local', 'pw')
+      await useAuthStore.getState().login('user@queryable.local', 'pw')
 
       const q = useQueryStore.getState()
       expect(q.conversationId).toBeNull()
@@ -109,7 +109,7 @@ describe('useAuthStore', () => {
       useQueryStore.setState({ conversationId: 'conv-1', turns: [{ id: 'x' }] })
       useDatasourceStore.setState({ selectedDatasourceId: 'ds-2' })
 
-      const result = await useAuthStore.getState().login('member@queryable.local', 'wrong')
+      const result = await useAuthStore.getState().login('user@queryable.local', 'wrong')
       expect(result.ok).toBe(false)
       expect(useQueryStore.getState().conversationId).toBe('conv-1')
       expect(useDatasourceStore.getState().selectedDatasourceId).toBe('ds-2')
@@ -119,7 +119,7 @@ describe('useAuthStore', () => {
   describe('logout', () => {
     it('clears the user and guest quota', async () => {
       useAuthStore.setState({
-        user: memberUser(),
+        user: regularUser(),
         isAuthenticated: true,
         guestQuota: { limit: 5, used: 1, remaining: 4 },
       })
@@ -132,7 +132,7 @@ describe('useAuthStore', () => {
 
     it('resets query and datasource session state on logout', async () => {
       useAuthStore.setState({
-        user: memberUser(),
+        user: regularUser(),
         isAuthenticated: true,
         guestQuota: null,
       })
@@ -170,12 +170,12 @@ describe('useAuthStore', () => {
   })
 })
 
-function memberUser() {
+function regularUser() {
   return {
-    id: 'u-member',
-    email: 'member@queryable.local',
-    name: 'Member',
-    role: 'member',
+    id: 'u-user',
+    email: 'user@queryable.local',
+    name: 'User',
+    role: 'user',
     is_active: true,
     created_at: '2026-07-01T00:00:00Z',
     last_login_at: null,

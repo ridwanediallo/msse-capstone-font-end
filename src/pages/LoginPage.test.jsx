@@ -35,17 +35,17 @@ describe('LoginPage', () => {
 
   it('navigates home after a successful login', async () => {
     renderLogin()
-    await userEvent.type(screen.getByLabelText(/email/i), 'member@queryable.local')
+    await userEvent.type(screen.getByLabelText(/email/i), 'user@queryable.local')
     await userEvent.type(screen.getByLabelText(/password/i), 'secret')
     await userEvent.click(screen.getByRole('button', { name: /sign in/i }))
 
     await screen.findByText('home page')
-    expect(useAuthStore.getState().user.role).toBe('member')
+    expect(useAuthStore.getState().user.role).toBe('user')
   })
 
   it('shows the error message when login fails', async () => {
     renderLogin()
-    await userEvent.type(screen.getByLabelText(/email/i), 'member@queryable.local')
+    await userEvent.type(screen.getByLabelText(/email/i), 'user@queryable.local')
     await userEvent.type(screen.getByLabelText(/password/i), 'wrong')
     await userEvent.click(screen.getByRole('button', { name: /sign in/i }))
 

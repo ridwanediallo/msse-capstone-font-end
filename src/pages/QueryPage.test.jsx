@@ -192,7 +192,7 @@ describe('QueryPage guest quota', () => {
 
   it('does not show a quota banner to signed-in users', async () => {
     useAuthStore.setState({
-      user: { id: 'u-1', email: 'a@b.c', name: 'A', role: 'member' },
+      user: { id: 'u-1', email: 'a@b.c', name: 'A', role: 'user' },
       isAuthenticated: true,
     })
     renderPage()

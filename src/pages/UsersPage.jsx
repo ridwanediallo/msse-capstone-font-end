@@ -41,8 +41,8 @@ function StatusBadge({ status }) {
 
 function RoleTag({ role }) {
   return (
-    <span className={`role-tag ${role === 'admin' ? 'role-admin' : 'role-member'}`}>
-      {role === 'admin' ? 'Admin' : 'Member'}
+    <span className={`role-tag ${role === 'admin' ? 'role-admin' : 'role-user'}`}>
+      {role === 'admin' ? 'Admin' : 'User'}
     </span>
   )
 }

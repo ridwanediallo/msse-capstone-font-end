@@ -56,7 +56,7 @@ function InviteUserModal({ open, onClose }) {
           layout="vertical"
           requiredMark={false}
           onFinish={handleFinish}
-          initialValues={{ role: 'member' }}
+          initialValues={{ role: 'user' }}
         >
           <Form.Item
             label="Email"
@@ -74,7 +74,7 @@ function InviteUserModal({ open, onClose }) {
           <Form.Item label="Role" name="role">
             <Select
               options={[
-                { value: 'member', label: 'Member' },
+                { value: 'user', label: 'User' },
                 { value: 'admin', label: 'Admin' },
               ]}
             />

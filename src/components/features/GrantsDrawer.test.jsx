@@ -18,18 +18,18 @@ const renderDrawer = (props = {}) =>
 describe('GrantsDrawer', () => {
   beforeEach(() => {
     useAdminStore.setState({
-      members: [],
-      membersLoading: false,
-      membersError: null,
+      grantableUsers: [],
+      grantableUsersLoading: false,
+      grantableUsersError: null,
       grants: [],
       grantsLoading: false,
       grantsError: null,
     })
   })
 
-  it('lists granted members with their email', async () => {
+  it('lists granted users with their email', async () => {
     renderDrawer()
-    expect(await screen.findByText('member@queryable.local')).toBeInTheDocument()
+    expect(await screen.findByText('user@queryable.local')).toBeInTheDocument()
     expect(screen.getByTestId('grants-list')).toBeInTheDocument()
   })
 
@@ -41,11 +41,11 @@ describe('GrantsDrawer', () => {
     )
     renderDrawer()
     expect(
-      await screen.findByText(/No member has been granted access yet/i),
+      await screen.findByText(/No user has been granted access yet/i),
     ).toBeInTheDocument()
   })
 
-  it('falls back to a short id when the member is unknown', async () => {
+  it('falls back to a short id when the user is unknown', async () => {
     server.use(
       http.get('/api/v1/admin/datasources/:id/grants', () =>
         HttpResponse.json([
@@ -60,13 +60,13 @@ describe('GrantsDrawer', () => {
       ),
     )
     renderDrawer()
-    expect(await screen.findByText('Member')).toBeInTheDocument()
+    expect(await screen.findByText('User')).toBeInTheDocument()
     expect(screen.getByText('u-gone')).toBeInTheDocument()
   })
 
-  it('disables Grant until a member is selected', async () => {
+  it('disables Grant until a user is selected', async () => {
     renderDrawer()
-    await screen.findByText('member@queryable.local')
+    await screen.findByText('user@queryable.local')
     const grantButton = screen.getByRole('button', { name: /grant/i })
     expect(grantButton).toBeDisabled()
   })
@@ -83,7 +83,7 @@ describe('GrantsDrawer', () => {
         HttpResponse.json(deleted ? [] : [
           {
             id: 'grant-1',
-            user_id: 'u-member',
+            user_id: 'u-user',
             data_source_id: 'ds-1',
             granted_by: 'u-admin',
             created_at: '2026-08-01T00:00:00Z',
@@ -94,7 +94,7 @@ describe('GrantsDrawer', () => {
     renderDrawer()
 
     const revokeButton = await screen.findByRole('button', {
-      name: /revoke access for member@queryable\.local/i,
+      name: /revoke access for user@queryable\.local/i,
     })
     await user.click(revokeButton)
     // Popconfirm appears; confirm it.
@@ -102,7 +102,7 @@ describe('GrantsDrawer', () => {
 
     expect(deleted).toBe(true)
     expect(
-      await screen.findByText(/No member has been granted access yet/i),
+      await screen.findByText(/No user has been granted access yet/i),
     ).toBeInTheDocument()
   })
 })

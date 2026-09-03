@@ -25,10 +25,10 @@ const useAdminStore = create((set, get) => ({
   auditLoading: false,
   auditError: null,
 
-  members: [],
-  membersTotal: 0,
-  membersLoading: false,
-  membersError: null,
+  grantableUsers: [],
+  grantableUsersTotal: 0,
+  grantableUsersLoading: false,
+  grantableUsersError: null,
   grants: [],
   grantsLoading: false,
   grantsError: null,
@@ -46,10 +46,10 @@ const useAdminStore = create((set, get) => ({
       auditTotal: 0,
       auditLoading: false,
       auditError: null,
-      members: [],
-      membersTotal: 0,
-      membersLoading: false,
-      membersError: null,
+      grantableUsers: [],
+      grantableUsersTotal: 0,
+      grantableUsersLoading: false,
+      grantableUsersError: null,
       grants: [],
       grantsLoading: false,
       grantsError: null,
@@ -58,17 +58,17 @@ const useAdminStore = create((set, get) => ({
   // Members for datasource-grant pickers: role-filtered, with optional
   // server-side search. Falls back to client-side filtering via Select's
   // built-in search when no query is provided.
-  fetchMembers: async (query = '') => {
-    set({ membersLoading: true, membersError: null })
+  fetchGrantableUsers: async (query = '') => {
+    set({ grantableUsersLoading: true, grantableUsersError: null })
     try {
-      const params = new URLSearchParams({ role: 'member', limit: '200' })
+      const params = new URLSearchParams({ role: 'user', limit: '200' })
       if (query) params.set('q', query)
       const res = await apiFetch(`/admin/users?${params}`)
       const data = await res.json()
       if (!res.ok) throw apiError(data)
-      set({ members: data.items, membersTotal: data.total, membersLoading: false })
+      set({ grantableUsers: data.items, grantableUsersTotal: data.total, grantableUsersLoading: false })
     } catch (err) {
-      set({ membersError: err.message, membersLoading: false })
+      set({ grantableUsersError: err.message, grantableUsersLoading: false })
     }
   },
 
