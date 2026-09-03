@@ -18,7 +18,10 @@ function useCountUp(target) {
       setDisplay(target)
       return undefined
     }
-    if (typeof requestAnimationFrame !== 'function') {
+    if (
+      typeof requestAnimationFrame !== 'function' ||
+      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    ) {
       setDisplay(target)
       return undefined
     }

@@ -5,7 +5,7 @@ import {
   CheckSquareOutlined, LoadingOutlined, BorderOutlined,
   CodeOutlined, CopyOutlined, TableOutlined,
   FilePdfOutlined, FileExcelOutlined, ArrowRightOutlined,
-  ReloadOutlined, DatabaseOutlined, LoginOutlined,
+  ReloadOutlined, DatabaseOutlined, LoginOutlined, BulbOutlined,
 } from '@ant-design/icons'
 import { format } from 'sql-formatter'
 import hljs from 'highlight.js/lib/core'
@@ -373,7 +373,8 @@ function QueryPage() {
   const {
     turns, loading, error, submitQuery, newConversation, conversationId,
     suggestions, fetchSuggestions, lastFailedQuestion,
-    suggestStatus, startSuggestReport, checkSuggestStatus, _suggestAutoTriggered,
+    suggestStatus, suggestReport, applySuggestedReport,
+    startSuggestReport, checkSuggestStatus, _suggestAutoTriggered,
   } = useQueryStore()
 
   const { selectedDatasourceId } = useDatasourceStore()
@@ -455,6 +456,22 @@ function QueryPage() {
                 <DatabaseOutlined />
               </div>
               <h2>Ask your data anything</h2>
+              {suggestStatus === 'ready' && suggestReport && (
+                <div className="insight-hero">
+                  <div className="insight-hero-icon" aria-hidden>
+                    <BulbOutlined />
+                  </div>
+                  <div className="insight-hero-body">
+                    <div className="insight-hero-label">
+                      We found something interesting in your data
+                    </div>
+                    <div className="insight-hero-question">{suggestReport.question}</div>
+                  </div>
+                  <Button type="primary" onClick={applySuggestedReport}>
+                    View insight
+                  </Button>
+                </div>
+              )}
               {suggestions.length > 0 && (
                 <div className="starter-suggestions">
                   <div className="starter-label">Try one of these:</div>
@@ -463,6 +480,7 @@ function QueryPage() {
                       <button
                         key={i}
                         className="suggestion-chip"
+                        style={{ animationDelay: `${Math.min(i * 40, 400)}ms` }}
                         onClick={() => submitQuery(s)}
                       >
                         {s}
@@ -507,6 +525,7 @@ function QueryPage() {
                 <button
                   key={i}
                   className="suggestion-chip"
+                  style={{ animationDelay: `${Math.min(i * 40, 400)}ms` }}
                   disabled={loading}
                   onClick={() => submitQuery(s)}
                 >
@@ -522,6 +541,7 @@ function QueryPage() {
                 <button
                   key={i}
                   className="suggestion-chip"
+                  style={{ animationDelay: `${Math.min(i * 40, 400)}ms` }}
                   onClick={() => submitQuery(s)}
                 >
                   {s}

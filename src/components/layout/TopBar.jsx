@@ -14,9 +14,19 @@ import useThemeStore from '../../stores/useThemeStore'
 
 const { Text } = Typography
 
+// Cycled every 4s while the insight is being discovered — makes a 10-30s
+// wait feel active without backend progress events.
+const DISCOVERY_PHASES = [
+  'Discovering insights',
+  'Analyzing your schema',
+  'Picking the best question',
+  'Running the report',
+]
+
 function TopBar() {
   const navigate = useNavigate()
   const [historyOpen, setHistoryOpen] = useState(false)
+  const [phaseIdx, setPhaseIdx] = useState(0)
 
   const {
     datasources, fetchDatasources, selectedDatasourceId, selectDatasource,
@@ -82,6 +92,17 @@ function TopBar() {
     setHistoryOpen(true)
   }
 
+  // Cycle discovery phases while processing; reset when it ends.
+  useEffect(() => {
+    if (suggestStatus !== 'processing') return undefined
+    setPhaseIdx(0)
+    const id = setInterval(
+      () => setPhaseIdx((i) => (i + 1) % DISCOVERY_PHASES.length),
+      4000,
+    )
+    return () => clearInterval(id)
+  }, [suggestStatus])
+
   return (
     <div className="topbar">
       <Dropdown menu={{ items: menuItems }} trigger={['click']}>
@@ -96,7 +117,9 @@ function TopBar() {
         {suggestStatus === 'processing' && (
           <Space.Compact>
             <Button icon={<LoadingOutlined />} loading style={{ pointerEvents: 'none' }}>
-              Discovering insights…
+              <span key={phaseIdx} className="phase-text">
+                {DISCOVERY_PHASES[phaseIdx]}…
+              </span>
             </Button>
             <Button
               icon={<CloseOutlined />}
