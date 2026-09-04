@@ -5,7 +5,7 @@ import {
   CheckSquareOutlined, LoadingOutlined, BorderOutlined,
   CodeOutlined, CopyOutlined, TableOutlined,
   FilePdfOutlined, FileExcelOutlined, ArrowRightOutlined,
-  ReloadOutlined, DatabaseOutlined, LoginOutlined,
+  ReloadOutlined, DatabaseOutlined, LoginOutlined, BulbOutlined,
 } from '@ant-design/icons'
 import { format } from 'sql-formatter'
 import hljs from 'highlight.js/lib/core'
@@ -373,6 +373,8 @@ function QueryPage() {
   const {
     turns, loading, error, submitQuery, newConversation, conversationId,
     suggestions, fetchSuggestions, lastFailedQuestion,
+    suggestStatus, suggestReport, applySuggestedReport,
+    startSuggestReport, checkSuggestStatus, _suggestAutoTriggered,
   } = useQueryStore()
 
   const { selectedDatasourceId } = useDatasourceStore()
@@ -381,6 +383,7 @@ function QueryPage() {
 
   const [localQuestion, setLocalQuestion] = useState('')
   const threadEndRef = useRef(null)
+  const _suggestAutoTriggeredSession = useRef(_suggestAutoTriggered)
 
   const hasTurns = turns.length > 0
   const isGuest = !user
@@ -397,6 +400,27 @@ function QueryPage() {
       fetchSuggestions(selectedDatasourceId)
     }
   }, [hasTurns, loading, selectedDatasourceId, fetchSuggestions])
+
+  // Auto-trigger suggest report once per login session when empty session is shown.
+  // Uses a synchronous ref guard so it never races with the async checkSuggestStatus
+  // on mount (which may already have a cached "ready" result).
+  useEffect(() => {
+    if (!hasTurns && !loading && selectedDatasourceId && suggestStatus === 'idle'
+        && !_suggestAutoTriggered && !_suggestAutoTriggeredSession.current) {
+      _suggestAutoTriggeredSession.current = true
+      startSuggestReport(selectedDatasourceId)
+      useQueryStore.setState({ _suggestAutoTriggered: true })
+      try { sessionStorage.setItem('suggestAutoTriggered', '1') } catch {}
+    }
+  }, [hasTurns, loading, selectedDatasourceId, suggestStatus, _suggestAutoTriggered, startSuggestReport])
+
+  // On mount, check if a suggest-report was already running (e.g. after page reload).
+  // Resumes polling or loads the result if ready.
+  useEffect(() => {
+    if (selectedDatasourceId) {
+      checkSuggestStatus(selectedDatasourceId)
+    }
+  }, [selectedDatasourceId, checkSuggestStatus])
 
   const handleSubmit = () => {
     const q = localQuestion.trim()
@@ -432,6 +456,22 @@ function QueryPage() {
                 <DatabaseOutlined />
               </div>
               <h2>Ask your data anything</h2>
+              {suggestStatus === 'ready' && suggestReport && (
+                <div className="insight-hero">
+                  <div className="insight-hero-icon" aria-hidden>
+                    <BulbOutlined />
+                  </div>
+                  <div className="insight-hero-body">
+                    <div className="insight-hero-label">
+                      We found something interesting in your data
+                    </div>
+                    <div className="insight-hero-question">{suggestReport.question}</div>
+                  </div>
+                  <Button type="primary" onClick={applySuggestedReport}>
+                    View insight
+                  </Button>
+                </div>
+              )}
               {suggestions.length > 0 && (
                 <div className="starter-suggestions">
                   <div className="starter-label">Try one of these:</div>
@@ -440,6 +480,7 @@ function QueryPage() {
                       <button
                         key={i}
                         className="suggestion-chip"
+                        style={{ animationDelay: `${Math.min(i * 40, 400)}ms` }}
                         onClick={() => submitQuery(s)}
                       >
                         {s}
@@ -484,7 +525,23 @@ function QueryPage() {
                 <button
                   key={i}
                   className="suggestion-chip"
+                  style={{ animationDelay: `${Math.min(i * 40, 400)}ms` }}
                   disabled={loading}
+                  onClick={() => submitQuery(s)}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {followUpSuggestions.length === 0 && suggestions.length > 0 && hasTurns && !loading && (
+            <div className="suggestion-row">
+              {suggestions.map((s, i) => (
+                <button
+                  key={i}
+                  className="suggestion-chip"
+                  style={{ animationDelay: `${Math.min(i * 40, 400)}ms` }}
                   onClick={() => submitQuery(s)}
                 >
                   {s}

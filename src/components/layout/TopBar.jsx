@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, Dropdown, Drawer, List, Popconfirm, Typography, Empty } from 'antd'
+import { Button, Dropdown, Drawer, List, Popconfirm, Typography, Empty, Space } from 'antd'
 import {
   DatabaseOutlined, HistoryOutlined, SettingOutlined,
   DeleteOutlined, DownOutlined,
   SunOutlined, MoonOutlined,
+  LoadingOutlined, BulbOutlined, CloseOutlined,
 } from '@ant-design/icons'
 import useDatasourceStore from '../../stores/useDatasourceStore'
 import useQueryStore from '../../stores/useQueryStore'
@@ -13,16 +14,26 @@ import useThemeStore from '../../stores/useThemeStore'
 
 const { Text } = Typography
 
+// Cycled every 4s while the insight is being discovered — makes a 10-30s
+// wait feel active without backend progress events.
+const DISCOVERY_PHASES = [
+  'Discovering insights',
+  'Analyzing your schema',
+  'Picking the best question',
+  'Running the report',
+]
+
 function TopBar() {
   const navigate = useNavigate()
   const [historyOpen, setHistoryOpen] = useState(false)
+  const [phaseIdx, setPhaseIdx] = useState(0)
 
   const {
     datasources, fetchDatasources, selectedDatasourceId, selectDatasource,
   } = useDatasourceStore()
   const {
     conversations, fetchConversations, loadConversation, deleteConversation,
-    newConversation,
+    newConversation, suggestStatus, applySuggestedReport, cancelSuggestReport,
   } = useQueryStore()
   const user = useAuthStore((s) => s.user)
   const isAdmin = user?.role === 'admin'
@@ -81,6 +92,17 @@ function TopBar() {
     setHistoryOpen(true)
   }
 
+  // Cycle discovery phases while processing; reset when it ends.
+  useEffect(() => {
+    if (suggestStatus !== 'processing') return undefined
+    setPhaseIdx(0)
+    const id = setInterval(
+      () => setPhaseIdx((i) => (i + 1) % DISCOVERY_PHASES.length),
+      4000,
+    )
+    return () => clearInterval(id)
+  }, [suggestStatus])
+
   return (
     <div className="topbar">
       <Dropdown menu={{ items: menuItems }} trigger={['click']}>
@@ -92,6 +114,26 @@ function TopBar() {
       </Dropdown>
 
       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        {suggestStatus === 'processing' && (
+          <Space.Compact>
+            <Button icon={<LoadingOutlined />} loading style={{ pointerEvents: 'none' }}>
+              <span key={phaseIdx} className="phase-text">
+                {DISCOVERY_PHASES[phaseIdx]}…
+              </span>
+            </Button>
+            <Button
+              icon={<CloseOutlined />}
+              onClick={cancelSuggestReport}
+              title="Cancel insight discovery"
+              aria-label="Cancel insight discovery"
+            />
+          </Space.Compact>
+        )}
+        {suggestStatus === 'ready' && (
+          <Button type="primary" icon={<BulbOutlined />} onClick={applySuggestedReport}>
+            See datasource insight
+          </Button>
+        )}
         <Button icon={<HistoryOutlined />} onClick={openHistory}>
           History
         </Button>

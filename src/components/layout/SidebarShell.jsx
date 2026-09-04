@@ -1,7 +1,7 @@
 import useThemeStore from '../../stores/useThemeStore'
 import UserFooter from './UserFooter'
 
-function SidebarShell({ actionIcon, actionLabel, onAction, sectionLabel, children }) {
+function SidebarShell({ actionIcon, actionLabel, onAction, secondActionIcon, secondActionLabel, onSecondAction, sectionLabel, children }) {
   const theme = useThemeStore((s) => s.theme)
 
   return (
@@ -15,6 +15,13 @@ function SidebarShell({ actionIcon, actionLabel, onAction, sectionLabel, childre
         {actionIcon}
         {actionLabel}
       </button>
+
+      {secondActionLabel && (
+        <button type="button" className="sidebar-new-session sidebar-suggest" onClick={onSecondAction}>
+          {secondActionIcon}
+          {secondActionLabel}
+        </button>
+      )}
 
       <div className="sidebar-section-label">{sectionLabel}</div>
 
