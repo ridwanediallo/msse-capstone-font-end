@@ -1,6 +1,6 @@
 # Git Flow Conventions
 
-> The backend `msse-capstone-backend-/GIT_FLOW.md` is the source of truth; this
+> The backend `querable-backend/GIT_FLOW.md` is the source of truth; this
 > copy is kept in sync for local reference.
 
 ## Branch Types

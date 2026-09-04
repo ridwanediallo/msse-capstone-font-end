@@ -29,8 +29,8 @@ on GitHub only, never locally, and never without reviewer approval.
    `chore`, `style`, `perf`, `revert`.
 
 3. **Two-repo phase work.** This project spans the backend
-   (`msse-capstone-backend-`, source of truth for the API contract) and the
-   frontend (`msse-capstone-font-end`). Create a **separate branch per repo**,
+   (`querable-backend`, source of truth for the API contract) and the
+   frontend (`querable-frontend`). Create a **separate branch per repo**,
    each opened as its own PR to that repo's `dev`. Keep the backend PR
    (contract) and frontend PR (consumer) cross-referenced in their bodies.
 

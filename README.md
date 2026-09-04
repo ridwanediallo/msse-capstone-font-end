@@ -5,7 +5,7 @@ multi-agent text-to-SQL reporting system. Ask questions in plain English and
 get SQL-backed answers with a narrative, KPI cards, and charts.
 
 > This is the **frontend** repository. The API it talks to lives in the
-> [msse-capstone-backend-](https://github.com/ridwanediallo/msse-capstone-backend-)
+> [querable-backend](https://github.com/ridwanediallo/querable-backend)
 > repository — see the [Related repositories](#related-repositories) section.
 
 ## Features
@@ -65,7 +65,7 @@ src/
 All requests go through `apiFetch` in `src/api.js` (no raw `fetch`), so the
 HttpOnly session cookie is always sent. The backend owns the API contract —
 mirror the `routes/` directory in the
-[msse-capstone-backend-](https://github.com/ridwanediallo/msse-capstone-backend-)
+[querable-backend](https://github.com/ridwanediallo/querable-backend)
 repo. See `AGENTS.md` in this repo for conventions.
 
 ## Tests
@@ -81,4 +81,4 @@ MSW intercepts `/api/v1/*`; register new endpoints in
 
 | Repo | Role |
 |------|------|
-| [msse-capstone-backend-](https://github.com/ridwanediallo/msse-capstone-backend-) | Flask API, CrewAI pipeline, and database tools this app talks to |
+| [querable-backend](https://github.com/ridwanediallo/querable-backend) | Flask API, CrewAI pipeline, and database tools this app talks to |

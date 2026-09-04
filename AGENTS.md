@@ -30,7 +30,7 @@ Process:
 
 Implementation-level fixes (bug fixes, styles, component tweaks, tests) do not
 need an ADR — when unsure, ask in the PR. The backend repo
-(`msse-capstone-backend-`) carries the same policy; a cross-repo contract change
+(`querable-backend`) carries the same policy; a cross-repo contract change
 needs an ADR in both. This file is loaded automatically by coding agents, which
 is what makes the policy enforceable in practice — keep it accurate.
 
@@ -39,7 +39,7 @@ is what makes the policy enforceable in practice — keep it accurate.
 React 19 + Vite SPA for a CrewAI multi-agent text-to-SQL reporting system.
 Auth is session-cookie based (HttpOnly cookies set by the backend): `apiFetch`
 in `src/api.js` sends `credentials: 'include'` on every request. The backend
-(`msse-capstone-backend-`, see its `WORKING_PLAN.md`) is the source of truth
+(`querable-backend`, see its `WORKING_PLAN.md`) is the source of truth
 for the API contract — mirror it exactly.
 
 ## Quick Commands

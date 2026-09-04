@@ -1,7 +1,7 @@
-# Working Plan — Frontend (msse-capstone-font-end)
+# Working Plan — Frontend (querable-frontend)
 
 This is the **frontend counterpart** to the backend's consolidated plan at
-[msse-capstone-backend-/WORKING_PLAN.md](../msse-capstone-backend-/WORKING_PLAN.md).
+[querable-backend/WORKING_PLAN.md](../querable-backend/WORKING_PLAN.md).
 That file is the source of truth for architecture decisions, phase tracking,
 cross-cutting workstreams, risk register, and remaining work.
 
@@ -108,7 +108,7 @@ All API calls go through Vite proxy to `localhost:5001`:
 
 ## Remaining Frontend Work
 
-See backend `WORKING_PLAN.md` [Remaining Work](../msse-capstone-backend-/WORKING_PLAN.md#remaining-work)
+See backend `WORKING_PLAN.md` [Remaining Work](../querable-backend/WORKING_PLAN.md#remaining-work)
 section — frontend tasks are tracked there alongside backend counterparts.
 
 High-level frontend-specific stretch items:
