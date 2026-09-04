@@ -12,7 +12,7 @@ export default defineConfig({
   },
   webServer: [
     {
-      command: 'cd ../msse-capstone-backend- && source .venv/bin/activate && flask create-admin admin@queryable.local "Admin1" 2>/dev/null; python app.py',
+      command: 'cd ../querable-backend && source .venv/bin/activate && flask create-admin admin@queryable.local "Admin1" 2>/dev/null; python app.py',
       port: 5001,
       reuseExistingServer: true,
       timeout: 15_000,
