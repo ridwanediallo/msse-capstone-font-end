@@ -12,11 +12,11 @@ const adminUser = {
   total_tokens: 4800,
 }
 
-const memberUser = {
-  id: 'u-member',
-  email: 'member@queryable.local',
-  name: 'Member',
-  role: 'member',
+const regularUser = {
+  id: 'u-user',
+  email: 'user@queryable.local',
+  name: 'User',
+  role: 'user',
   is_active: true,
   created_at: '2026-07-01T00:00:00Z',
   last_login_at: null,
@@ -24,11 +24,11 @@ const memberUser = {
   total_tokens: 2000,
 }
 
-const memberUser2 = {
-  id: 'u-member-2',
-  email: 'member2@queryable.local',
-  name: 'Second Member',
-  role: 'member',
+const regularUser2 = {
+  id: 'u-user-2',
+  email: 'user2@queryable.local',
+  name: 'Second User',
+  role: 'user',
   is_active: true,
   created_at: '2026-07-02T00:00:00Z',
   last_login_at: null,
@@ -172,7 +172,7 @@ export const handlers = [
         { status: 401 },
       )
     }
-    return HttpResponse.json({ user: memberUser })
+    return HttpResponse.json({ user: regularUser })
   }),
   http.post('/api/v1/auth/logout', () => HttpResponse.json({ ok: true })),
   http.post('/api/v1/auth/claim-guest', () => HttpResponse.json({ migrated: 0 })),
@@ -192,7 +192,7 @@ export const handlers = [
     const url = new URL(request.url)
     const role = url.searchParams.get('role')
     const items =
-      role === 'member' ? [memberUser, memberUser2] : [adminUser, memberUser, memberUser2]
+      role === 'user' ? [regularUser, regularUser2] : [adminUser, regularUser, regularUser2]
     const activeAdminCount = items.filter((u) => u.role === 'admin' && u.status === 'active').length
     return HttpResponse.json({ total: items.length, items, active_admin_count: activeAdminCount })
   }),
@@ -201,7 +201,7 @@ export const handlers = [
     HttpResponse.json([
       {
         id: 'grant-1',
-        user_id: 'u-member',
+        user_id: 'u-user',
         data_source_id: 'ds-1',
         granted_by: 'u-admin',
         created_at: '2026-08-01T00:00:00Z',

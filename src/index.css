@@ -1144,7 +1144,7 @@ html.theme-switching *::after {
   color: var(--accent-strong);
 }
 
-.role-member {
+.role-user {
   background: var(--active-bg);
   color: var(--text-muted);
   border: 1px solid var(--panel-border);

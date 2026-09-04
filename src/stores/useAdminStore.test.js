@@ -3,9 +3,9 @@ import useAdminStore from './useAdminStore'
 
 const resetStore = () => {
   useAdminStore.setState({
-    members: [],
-    membersLoading: false,
-    membersError: null,
+    grantableUsers: [],
+    grantableUsersLoading: false,
+    grantableUsersError: null,
     grants: [],
     grantsLoading: false,
     grantsError: null,
@@ -17,13 +17,13 @@ describe('useAdminStore — datasource grants', () => {
     resetStore()
   })
 
-  describe('fetchMembers', () => {
-    it('loads member users only', async () => {
-      await useAdminStore.getState().fetchMembers()
+  describe('fetchGrantableUsers', () => {
+    it('loads regular users only', async () => {
+      await useAdminStore.getState().fetchGrantableUsers()
       const state = useAdminStore.getState()
-      expect(state.members).toHaveLength(2)
-      expect(state.members.every((m) => m.role === 'member')).toBe(true)
-      expect(state.members[0].email).toBe('member@queryable.local')
+      expect(state.grantableUsers).toHaveLength(2)
+      expect(state.grantableUsers.every((m) => m.role === 'user')).toBe(true)
+      expect(state.grantableUsers[0].email).toBe('user@queryable.local')
     })
   })
 
@@ -32,7 +32,7 @@ describe('useAdminStore — datasource grants', () => {
       await useAdminStore.getState().fetchGrants('ds-1')
       const state = useAdminStore.getState()
       expect(state.grants).toHaveLength(1)
-      expect(state.grants[0].user_id).toBe('u-member')
+      expect(state.grants[0].user_id).toBe('u-user')
       expect(state.loading ?? false).toBe(false)
     })
 
@@ -53,9 +53,9 @@ describe('useAdminStore — datasource grants', () => {
 
   describe('grantDatasource', () => {
     it('posts the grant and refetches', async () => {
-      const result = await useAdminStore.getState().grantDatasource('ds-1', 'u-member-2')
+      const result = await useAdminStore.getState().grantDatasource('ds-1', 'u-user-2')
       expect(result.ok).toBe(true)
-      expect(result.data.user_id).toBe('u-member-2')
+      expect(result.data.user_id).toBe('u-user-2')
       // fetchGrants ran again as part of the action
       expect(useAdminStore.getState().grants.length).toBeGreaterThan(0)
     })
@@ -71,7 +71,7 @@ describe('useAdminStore — datasource grants', () => {
           ),
         ),
       )
-      const result = await useAdminStore.getState().grantDatasource('ds-1', 'u-member')
+      const result = await useAdminStore.getState().grantDatasource('ds-1', 'u-user')
       expect(result.ok).toBe(false)
       expect(result.error).toBe('Grant already exists')
     })

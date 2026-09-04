@@ -9,54 +9,54 @@ const { Text } = Typography
 
 function GrantsDrawer({ datasource, open, onClose }) {
   const {
-    members, membersTotal, membersLoading, fetchMembers,
+    grantableUsers, grantableUsersTotal, grantableUsersLoading, fetchGrantableUsers,
     grants, grantsLoading, grantsError, fetchGrants,
     grantDatasource, revokeGrant,
   } = useAdminStore()
   const [selectedUserId, setSelectedUserId] = useState(null)
   const [granting, setGranting] = useState(false)
-  const [memberSearch, setMemberSearch] = useState('')
+  const [userSearch, setUserSearch] = useState('')
 
   const dsId = datasource?.id
 
   useEffect(() => {
     setSelectedUserId(null)
-    setMemberSearch('')
+    setUserSearch('')
     if (!open || !dsId) return
     fetchGrants(dsId)
-    fetchMembers()
-  }, [open, dsId, fetchGrants, fetchMembers])
+    fetchGrantableUsers()
+  }, [open, dsId, fetchGrants, fetchGrantableUsers])
 
-  // Debounce member search: re-fetch from backend with query filter.
+  // Debounce user search: re-fetch from backend with query filter.
   const debounceRef = useRef(null)
   useEffect(() => {
     if (!open) return
     clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
-      fetchMembers(memberSearch.trim())
+      fetchGrantableUsers(userSearch.trim())
     }, 300)
     return () => clearTimeout(debounceRef.current)
-  }, [memberSearch, open, fetchMembers])
+  }, [userSearch, open, fetchGrantableUsers])
 
   const grantedUserIds = useMemo(
     () => new Set(grants.map((g) => g.user_id)),
     [grants]
   )
 
-  const memberOptions = useMemo(
+  const userOptions = useMemo(
     () =>
-      members
+      grantableUsers
         .filter((m) => !grantedUserIds.has(m.id))
         .map((m) => ({
           value: m.id,
           label: m.name ? `${m.name} (${m.email})` : m.email,
         })),
-    [members, grantedUserIds]
+    [grantableUsers, grantedUserIds]
   )
 
   const emailFor = (userId) => {
-    const member = members.find((m) => m.id === userId)
-    return member?.email || null
+    const user = grantableUsers.find((m) => m.id === userId)
+    return user?.email || null
   }
 
   const handleGrant = async () => {
@@ -89,7 +89,7 @@ function GrantsDrawer({ datasource, open, onClose }) {
       width={420}
     >
       <Text type="secondary">
-        Members need an explicit grant to query this datasource. Admins always
+        Users need an explicit grant to query this datasource. Admins always
         have access.
       </Text>
 
@@ -97,17 +97,17 @@ function GrantsDrawer({ datasource, open, onClose }) {
         <Select
           showSearch
           style={{ flex: 1 }}
-          placeholder="Search members by name or email…"
+          placeholder="Search users by name or email…"
           value={selectedUserId}
           onChange={setSelectedUserId}
-          onSearch={setMemberSearch}
-          loading={membersLoading}
-          options={memberOptions}
+          onSearch={setUserSearch}
+          loading={grantableUsersLoading}
+          options={userOptions}
           optionFilterProp="label"
           notFoundContent={
-            membersLoading ? 'Loading…' : 'No members found'
+            grantableUsersLoading ? 'Loading…' : 'No users found'
           }
-          aria-label="Select member to grant access"
+          aria-label="Select user to grant access"
           filterOption={(input, option) =>
             (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
           }
@@ -116,7 +116,7 @@ function GrantsDrawer({ datasource, open, onClose }) {
               {menu}
               <Divider style={{ margin: '4px 0' }} />
               <div style={{ padding: '4px 8px', color: 'var(--text-muted)', fontSize: 12 }}>
-                {memberOptions.length} of {membersTotal} members shown
+                {userOptions.length} of {grantableUsersTotal} users shown
               </div>
             </>
           )}
@@ -139,7 +139,7 @@ function GrantsDrawer({ datasource, open, onClose }) {
       ) : grants.length === 0 ? (
         <Empty
           image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description="No member has been granted access yet"
+          description="No user has been granted access yet"
           style={{ marginTop: 16 }}
         />
       ) : (
@@ -148,7 +148,7 @@ function GrantsDrawer({ datasource, open, onClose }) {
             const email = emailFor(grant.user_id)
             return (
               <li key={grant.id}>
-                <span className="user-drawer-action">{email || 'Member'}</span>
+                <span className="user-drawer-action">{email || 'User'}</span>
                 {!email && (
                   <Text type="secondary" code style={{ marginLeft: 6 }}>
                     {grant.user_id.slice(0, 8)}
@@ -156,7 +156,7 @@ function GrantsDrawer({ datasource, open, onClose }) {
                 )}
                 <Text type="secondary">{relativeTime(grant.created_at)}</Text>
                 <Popconfirm
-                  title="Revoke this member's access?"
+                  title="Revoke this user's access?"
                   onConfirm={() => handleRevoke(grant)}
                   okText="Revoke"
                   cancelText="Cancel"

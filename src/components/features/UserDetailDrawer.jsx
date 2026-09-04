@@ -100,7 +100,7 @@ function UserDetailDrawer({ user, open, onClose, isLastAdmin }) {
             disabled={lastAdmin}
             style={{ width: 140 }}
             options={[
-              { value: 'member', label: 'Member' },
+              { value: 'user', label: 'User' },
               { value: 'admin', label: 'Admin' },
             ]}
             onChange={handleRoleChange}
